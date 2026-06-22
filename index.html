@@ -3,34 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>閃動格子支援前線</title>
+    <title>閃動格子支援前線 - 混合同步版</title>
     <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --primary-neon: #00f2fe;
+            --accent-neon: #9b51e0;
+            --success-neon: #00ff87;
+            --warning-neon: #ff9f43;
+            --danger-neon: #ff4757;
+        }
+
         body {
-            font-family: 'Microsoft JhengHei', Arial, sans-serif;
-            background-color: #f0f2f5;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-height: 100vh;
             margin: 0;
-            padding: 20px 0;
+            padding: 20px;
             box-sizing: border-box;
+            background-image: radial-gradient(circle at 50% 30%, #1e1b4b 0%, var(--bg-color) 70%);
+            position: relative;
+        }
+
+        /* 🚨 全螢幕警示外框 */
+        .panic-border {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            border: 0px solid transparent;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 9999;
+            transition: border 0.3s;
+        }
+
+        body.panic-mode .panic-border {
+            border: 10px solid var(--danger-neon);
+            box-shadow: inset 0 0 30px rgba(255, 71, 87, 0.6);
+            animation: borderShake 0.15s infinite linear, borderFlash 0.5s infinite alternate;
+        }
+
+        @keyframes borderShake {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(-4px, 3px); }
+            40% { transform: translate(4px, -2px); }
+            60% { transform: translate(-3px, -3px); }
+            80% { transform: translate(3px, 4px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        @keyframes borderFlash {
+            from { border-color: var(--danger-neon); box-shadow: inset 0 0 20px rgba(255, 71, 87, 0.5); }
+            to { border-color: #7a0010; box-shadow: inset 0 0 40px rgba(255, 71, 87, 0.9); }
         }
 
         h1 {
-            color: #333;
-            margin-bottom: 5px;
-            letter-spacing: 2px;
+            font-size: 32px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 20px;
+            color: #fff;
+            text-shadow: 0 0 10px var(--primary-neon), 0 0 20px var(--primary-neon);
+            animation: titleGlow 2s infinite alternate;
         }
 
+        @keyframes titleGlow {
+            from { text-shadow: 0 0 10px var(--primary-neon), 0 0 20px var(--primary-neon); }
+            to { text-shadow: 0 0 15px var(--primary-neon), 0 0 30px var(--accent-neon); }
+        }
+
+        /* 頂部設定區 */
         .config-container {
-            background: white;
+            background: var(--panel-bg);
             padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 15px;
-            width: 480px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 25px;
+            width: 785px;
             box-sizing: border-box;
         }
 
@@ -39,56 +99,64 @@
             align-items: center;
             justify-content: space-between;
             margin-bottom: 10px;
-            gap: 10px;
+            gap: 15px;
+            flex-wrap: wrap;
         }
 
         .setup-item {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
+            font-weight: bold;
+            color: #cbd5e1;
         }
 
         .config-container input[type="number"] {
-            width: 55px;
-            padding: 5px;
+            width: 60px;
+            padding: 6px;
             font-size: 15px;
             text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            background-color: #0f172a;
+            border: 1px solid var(--primary-neon);
+            border-radius: 6px;
+            color: #fff;
+            font-weight: bold;
         }
 
+        /* 物資配置面板 */
         .import-area {
             display: none; 
-            margin-top: 10px;
-            border-top: 1px dashed #ccc;
-            padding-top: 10px;
+            margin-top: 15px;
+            border-top: 1px dashed rgba(255,255,255,0.2);
+            padding-top: 15px;
         }
 
         .tab-headers {
             display: flex;
-            gap: 5px;
-            margin-bottom: 8px;
-            border-bottom: 2px solid #ddd;
+            gap: 8px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #334155;
             padding-bottom: 5px;
             overflow-x: auto;
         }
 
         .tab-btn {
-            padding: 6px 12px;
+            padding: 8px 16px;
             font-size: 13px;
-            background-color: #e0e0e0;
-            color: #333;
+            background-color: #334155;
+            color: #94a3b8;
             border: none;
-            border-radius: 4px 4px 0 0;
+            border-radius: 6px 6px 0 0;
             cursor: pointer;
             white-space: nowrap;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            font-weight: bold;
         }
 
         .tab-btn.active {
-            background-color: #2980b9;
+            background: linear-gradient(135deg, var(--primary-neon) 0%, var(--accent-neon) 100%);
             color: white;
-            font-weight: bold;
+            box-shadow: 0 -2px 10px rgba(0, 242, 254, 0.3);
         }
 
         .tab-content-panel {
@@ -98,608 +166,529 @@
             display: block;
         }
 
-        /* 📊 修正後的編輯器容器：由它來控管滾動條與固定高度 */
-        .editor-container {
+        /* 複合佈局：左邊貼文字、右邊看下拉 */
+        .editor-flex-layout {
             display: flex;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #ffffff;
-            height: 260px;       /* 固定的顯示高度 */
-            overflow-y: auto;    /* 統一由最外層引導垂直滾動條 */
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* 左側行號欄：改為跟隨父層高度，取消獨立滾動 */
-        .line-numbers {
-            width: 35px;
-            background-color: #f1f2f6;
-            border-right: 1px solid #ddd;
-            color: #a4b0be;
-            text-align: center;
-            padding: 6px 0;      /* 精準對齊 Textarea 的 padding */
-            font-size: 14px;
-            line-height: 24px;   /* 強制行高 24px */
-            user-select: none;
-            font-family: 'Courier New', Courier, monospace;
+            gap: 15px;
+            background-color: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 12px;
             box-sizing: border-box;
         }
 
-        /* 右側文字輸入框：取消滾動條，高度自動撐滿容器 */
-        .import-area textarea {
+        /* 快速複製貼上區 */
+        .paste-box-zone {
             flex: 1;
-            height: 100%;        /* 填滿父容器 */
-            min-height: 400px;   /* 預設拉高，確保沒有底部的截斷 */
-            border: none;
-            outline: none;
-            font-size: 14px;
-            padding: 6px 8px;    /* 精準對齊行號欄的 padding */
-            box-sizing: border-box;
-            line-height: 24px;   /* 強制行高 24px，與行號完美嚙合 */
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .paste-box-zone textarea {
+            width: 100%;
+            height: 200px;
+            background-color: #1e293b;
+            color: #fff;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 13px;
             resize: none;
-            overflow-y: hidden;  /* 關閉獨立滾動條，防錯位核心 */
-            font-family: 'Microsoft JhengHei', sans-serif;
+            box-sizing: border-box;
+            font-family: inherit;
         }
 
-        .import-tip {
-            font-size: 12px;
-            color: #e67e22;
-            margin-bottom: 8px;
+        /* 下拉單網格容器 */
+        .dropdown-grid-container {
+            flex: 1.2;
+            height: 245px;
+            overflow-y: auto;
+            padding-right: 5px;
+            box-sizing: border-box;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .item-row:last-child { border-bottom: none; }
+
+        .item-num {
+            width: 24px;
+            color: #64748b;
+            font-family: monospace;
+            font-size: 13px;
             font-weight: bold;
-            line-height: 1.4;
+            text-align: center;
         }
 
-        .info {
-            font-size: 18px;
-            margin-bottom: 10px;
-            color: #666;
-            text-align: center;
+        .select-item, .select-qty {
+            background-color: #1e293b;
+            color: #fff;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-size: 13px;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+        }
+        .select-item { flex: 2; }
+        .select-qty { flex: 1; }
+
+        /* 左右並排佈局 */
+        .main-layout {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 25px;
+            width: 785px;
+            box-sizing: border-box;
+        }
+
+        /* 左側控制面板 */
+        .left-control-panel {
+            width: 275px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.05);
+            height: 485px;
+            box-sizing: border-box;
         }
 
         .round-indicator {
-            font-size: 22px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: 800;
+            color: #94a3b8;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
         }
+        .round-indicator span {
+            color: var(--primary-neon);
+            font-size: 24px;
+        }
+
+        .timer-box { width: 100%; margin-bottom: 20px; }
+        .timer-container {
+            font-size: 26px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 900;
+            color: var(--success-neon);
+            text-shadow: 0 0 10px rgba(0, 255, 135, 0.3);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        
+        .progress-bar-bg {
+            width: 100%; height: 8px; background-color: #0f172a; border-radius: 4px; overflow: hidden; border: 1px solid #334155;
+        }
+        .progress-bar-fill {
+            width: 100%; height: 100%; background: linear-gradient(90deg, var(--success-neon), #2ecc71); transition: width 1s linear;
+        }
+
+        .timer-container.danger { color: var(--danger-neon); text-shadow: 0 0 15px var(--danger-neon); }
+        .timer-container.danger + .progress-bar-bg .progress-bar-fill { background: linear-gradient(90deg, var(--danger-neon), #ff4757); }
+
+        .info { font-size: 15px; color: #cbd5e1; margin-bottom: 10px; font-weight: bold; }
+        .info span { color: var(--primary-neon); font-size: 18px; }
 
         .hint-text {
-            font-size: 15px;
-            color: #e67e22;
-            margin-bottom: 15px;
-            font-weight: bold;
+            font-size: 13px; color: #94a3b8; margin-bottom: 20px; font-weight: 500; line-height: 1.5;
+            background: #0f172a; padding: 10px; border-radius: 8px; border-left: 4px solid var(--warning-neon); width: 100%; box-sizing: border-box;
         }
 
-        .control-btns {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
+        .control-btns { display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: auto; }
 
+        /* 右側戰場格子 */
+        .right-board-panel { width: 485px; height: 485px; flex-shrink: 0; box-sizing: border-box; }
         .game-board {
-            display: grid;
-            grid-template-columns: repeat(4, 110px);
-            grid-template-rows: repeat(4, 110px);
-            gap: 15px;
-            perspective: 1000px;
-            margin: 10px 0;
+            display: grid; grid-template-columns: repeat(4, 110px); grid-template-rows: repeat(4, 110px); gap: 15px;
+            width: 100%; height: 100%; perspective: 1200px; box-sizing: border-box;
         }
 
-        .card {
-            width: 110px;
-            height: 110px;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.5s;
-            cursor: default;
-        }
+        .card { width: 110px; height: 110px; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); box-sizing: border-box; }
+        .card.playable { cursor: pointer; }
+        .card.playable:hover .card-back { border-color: var(--primary-neon); box-shadow: 0 0 15px rgba(0, 242, 254, 0.4); transform: scale(1.03); }
+        .card.flipped { transform: rotateY(180deg); }
 
-        .card.playable {
-            cursor: pointer;
-        }
+        .card.auto-flipped .card-front { border: 4px solid var(--warning-neon) !important; box-shadow: 0 0 25px var(--warning-neon); animation: autoFlipGlow 2s infinite alternate; }
+        .card.bomb-exploded .card-front { border: 4px solid var(--danger-neon) !important; box-shadow: 0 0 30px var(--danger-neon); background: #2d1316 !important; }
 
-        .card.flipped {
-            transform: rotateY(180deg);
-            cursor: default;
-        }
+        @keyframes autoFlipGlow { 0% { box-shadow: 0 0 15px var(--warning-neon); } 100% { box-shadow: 0 0 30px #ff007f; } }
 
-        .card.auto-flipped .card-front {
-            border: 4px solid #e67e22 !important;
-            box-shadow: 0 0 15px rgba(230, 126, 34, 0.8);
-            background-color: #fffdfa !important;
-        }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 14px; box-sizing: border-box; }
+        .card-back { background: linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%) !important; color: var(--primary-neon) !important; font-size: 36px; font-weight: 900; border: 2px solid #4c1d95; text-shadow: 0 0 8px var(--primary-neon); }
+        .card-front { background-color: #ffffff !important; color: #0f172a !important; transform: rotateY(180deg); border: 3px solid var(--primary-neon); padding: 6px; text-align: center; overflow: hidden; }
 
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            box-sizing: border-box;
-        }
+        .card-front .item-name { font-size: 24px; font-weight: 900; line-height: 1.1; word-break: break-all; max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .bomb-img { width: 70px; height: 70px; object-fit: contain; animation: bombShake 0.5s infinite alternate; }
+        @keyframes bombShake { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+        .card-front .qty-tag { display: block; margin-top: 4px; color: #e67e22; font-size: 22px; font-weight: 900; line-height: 1; }
 
-        .card-back {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%) !important;
-            color: white !important;
-            font-size: 38px;
-            font-weight: bold;
-        }
-
-        .card-front {
-            background-color: #ffffff !important;
-            color: #2c3e50 !important;
-            transform: rotateY(180deg);
-            border: 3px solid #3498db;
-            padding: 6px;
-            text-align: center;
-            box-sizing: border-box;
-            
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-        }
-
-        .card-front .item-name {
-            font-size: 28px;
-            font-weight: 900;
-            line-height: 1.1;
-            word-break: break-all;
-            max-width: 100%;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .bomb-img {
-            width: 65px;
-            height: 65px;
-            object-fit: contain;
-        }
-
-        .card-front .qty-tag {
-            display: block;
-            margin-top: 3px;
-            color: #e67e22;
-            font-size: 22px;
-            font-weight: bold;
-            line-height: 1;
-        }
-
-        .btn {
-            padding: 6px 15px;
-            font-size: 14px;
-            background-color: #2c3e50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn:hover {
-            background-color: #1a252f;
-        }
-
-        .btn-main {
-            font-size: 20px;
-            padding: 12px 40px;
-            font-weight: bold;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
-        }
+        .btn { padding: 8px 18px; font-size: 14px; background-color: #334155; color: white; border: 1px solid #475569; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn:hover { background-color: #475569; border-color: #94a3b8; }
+        .btn-main { font-size: 18px; padding: 14px 20px; font-weight: 800; border-radius: 10px; width: 100%; box-sizing: border-box; border: none; text-transform: uppercase; }
         
-        .btn-start {
-            background-color: #27ae60;
-        }
-        .btn-start:hover {
-            background-color: #219653;
-        }
-        
-        .btn-next {
-            background-color: #e67e22;
-            animation: pulse 1.5s infinite;
-        }
-        .btn-next:hover {
-            background-color: #d35400;
-        }
+        .btn-start { background: linear-gradient(135deg, #00ff87 0%, #60efff 100%); color: #0f172a; box-shadow: 0 4px 15px rgba(0, 255, 135, 0.4); }
+        .btn-start:hover { box-shadow: 0 4px 25px rgba(0, 255, 135, 0.7); transform: translateY(-2px); }
+        .btn-pause { background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%); color: white; }
+        .btn-next { background: linear-gradient(135deg, #ff9f43 0%, #ff4757 100%); color: white; animation: pulseGlow 1.2s infinite; }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 4px 6px rgba(230, 126, 34, 0.4); }
-            50% { box-shadow: 0 4px 15px rgba(230, 126, 34, 0.8); }
-            100% { box-shadow: 0 4px 6px rgba(230, 126, 34, 0.4); }
-        }
-
-        .btn-main:disabled {
-            background-color: #bdc3c7;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
+        @keyframes pulseGlow { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        .btn-main:disabled { background: #334155 !important; color: #64748b !important; cursor: not-allowed; box-shadow: none !important; transform: none !important; }
     </style>
 </head>
 <body>
 
-    <h1>閃動格子支援前線</h1>
+    <div class="panic-border"></div>
+
+    <h1>⚡ 支援前線：閃動戰場 ⚡</h1>
     
     <div class="config-container">
         <div class="setup-row">
             <div class="setup-item">
-                <label for="totalRoundsInput">總任務回合：</label>
-                <input type="number" id="totalRoundsInput" value="3" min="1" max="10" onchange="generateTabs()">
+                <span>🎯 總任務：</span>
+                <input type="number" id="totalRoundsInput" value="3" min="1" max="10" onchange="generateTabs()"> 回合
             </div>
             <div class="setup-item">
-                <label for="secondsInput">閃動翻牌間隔：</label>
-                <input type="number" id="secondsInput" value="5" min="1" max="60"> 秒
+                <span>⏱️ 閃動速度：</span>
+                <input type="number" id="secondsInput" value="5" min="1" max="60"> 秒/次
             </div>
-            <button class="btn" onclick="toggleImportArea()">修改/匯入任務</button>
+            <div class="setup-item">
+                <span>⏳ 回合時限：</span>
+                <input type="number" id="timerLimitInput" value="120" min="5" max="600"> 秒
+            </div>
+            <button class="btn" onclick="toggleImportArea()">🛠️ 配置戰略物資</button>
         </div>
 
         <div class="import-area" id="importArea">
-            <div class="import-tip">
-                💡 格式：品項 * 數量 (若為炸彈直接輸入「炸彈」即可，免填數量)<br>
-                💡 修正版：左側編號與右側文字已同步鎖定，絕對精準對齊不走位！
-            </div>
-            
             <div class="tab-headers" id="tabHeaders"></div>
             <div id="tabContents"></div>
         </div>
         
         <div style="text-align: right; margin-top: 10px;">
-            <button class="btn" style="background-color: #2980b9;" onclick="applySettingsAndReset()">套用設定並部署格子</button>
+            <button class="btn" style="background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color:#0f172a; border:none;" onclick="applySettingsAndReset()">⚡ 重新部署新戰場</button>
         </div>
     </div>
 
-    <div class="round-indicator">目前進度：第 <span id="currentRound">0</span> / <span id="totalRounds">0</span> 回合</div>
-    <div class="info">
-        本局已解鎖：<span id="flippedCount">0</span> / 16 個格子
-    </div>
-    <div class="hint-text" id="statusHint">已預掛第一回合題目！直接點選下方【開始遊戲】即可啟動！</div>
+    <div class="main-layout">
+        <div class="left-control-panel">
+            <div class="round-indicator">STAGE <span id="currentRound">0</span> / <span id="totalRounds">0</span></div>
+            <div class="timer-box">
+                <div class="timer-container" id="timerDisplay">02:00</div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+            </div>
+            <div class="info">戰局解鎖度：<span id="flippedCount">0</span> / 16</div>
+            <div class="hint-text" id="statusHint">點擊【START】啟動閃動戰場！</div>
+            <div class="control-btns">
+                <button id="mainGameBtn" class="btn btn-main btn-start" onclick="handleMainBtnClick()">▶ START GAME</button>
+                <button id="pauseGameBtn" class="btn btn-main btn-pause" style="display: none;" onclick="handlePauseBtnClick()">⏸️ PAUSE</button>
+            </div>
+        </div>
 
-    <div class="control-btns">
-        <button id="mainGameBtn" class="btn btn-main btn-start" onclick="handleMainBtnClick()">▶ 開始遊戲</button>
+        <div class="right-board-panel">
+            <div class="game-board" id="board"></div>
+        </div>
     </div>
-
-    <div class="game-board" id="board"></div>
 
     <script>
-        let allRoundsData = []; 
-        let flippedCount = 0; 
-        let currentRound = 1; 
-        let maxRounds = 3;    
-        let flipIntervalSeconds = 5; 
-        let autoFlipTimer = null;
-        let gameState = 'ready'; 
-
+        let flippedCount = 0, currentRound = 1, maxRounds = 3, flipIntervalSeconds = 5;
+        let autoFlipTimer = null, countdownTimer = null, timeLeft = 120, initialTimeLimit = 120, gameState = 'ready';
         const bombIconUrl = "https://img.icons8.com/emoji/96/bomb-emoji.png";
 
-        const presetRound1Text = `眼鏡 * 2
-眼鏡 * 2
-水壺 * 4
-鞋子 * 3
-鑰匙 * 1
-手錶 * 5
-背包 * 2
-雨傘 * 3
-帽子 * 4
-手機 * 1
-耳機 * 5
-鉛筆 * 2
-書本 * 3
-杯子 * 4
-肥皂 * 1
-肥皂 * 1`;
+        const availableItems = ["眼鏡", "水壺", "鞋子", "鑰匙", "手錶", "背包", "雨傘", "帽子", "手機", "耳機", "鉛筆", "書本", "杯子", "肥皂", "外套", "錢包", "炸彈", "（空）"];
 
-        const board = document.getElementById('board');
-        const flippedCountDisplay = document.getElementById('flippedCount');
-        const currentRoundDisplay = document.getElementById('currentRound');
-        const totalRoundsDisplay = document.getElementById('totalRounds');
-        const totalRoundsInput = document.getElementById('totalRoundsInput');
-        const secondsInput = document.getElementById('secondsInput');
-        const statusHint = document.getElementById('statusHint');
-        const importArea = document.getElementById('importArea');
-        const mainGameBtn = document.getElementById('mainGameBtn');
-        const tabHeaders = document.getElementById('tabHeaders');
-        const tabContents = document.getElementById('tabContents');
+        const presetTexts = {
+            1: `眼鏡 * 2\n眼鏡 * 2\n水壺 * 4\n鞋子 * 3\n鑰匙 * 1\n手錶 * 5\n背包 * 2\n雨傘 * 3\n帽子 * 4\n手機 * 1\n耳機 * 5\n鉛筆 * 2\n書本 * 3\n杯子 * 4\n炸彈\n肥皂 * 1`,
+            2: `炸彈\n炸彈\n手機 * 2\n錢包 * 1\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）`,
+            3: `（空）`
+        };
 
-        function toggleImportArea() {
-            importArea.style.display = (importArea.style.display === 'block') ? 'none' : 'block';
-        }
+        const board = document.getElementById('board'), flippedCountDisplay = document.getElementById('flippedCount');
+        const currentRoundDisplay = document.getElementById('currentRound'), totalRoundsDisplay = document.getElementById('totalRounds');
+        const totalRoundsInput = document.getElementById('totalRoundsInput'), secondsInput = document.getElementById('secondsInput');
+        const timerLimitInput = document.getElementById('timerLimitInput'), timerDisplay = document.getElementById('timerDisplay');
+        const progressBar = document.getElementById('progressBar'), statusHint = document.getElementById('statusHint');
+        const importArea = document.getElementById('importArea'), mainGameBtn = document.getElementById('mainGameBtn'), pauseGameBtn = document.getElementById('pauseGameBtn');
+        const tabHeaders = document.getElementById('tabHeaders'), tabContents = document.getElementById('tabContents');
 
-        // 建立 1~16 行號 HTML
-        function createLineNumbersText() {
-            let arr = [];
-            for(let i = 1; i <= 16; i++) {
-                arr.push(i);
-            }
-            return arr.join('<br>');
-        }
+        function toggleImportArea() { importArea.style.display = (importArea.style.display === 'block') ? 'none' : 'block'; }
 
+        // 產生整合面板
         function generateTabs() {
-            let rounds = parseInt(totalRoundsInput.value);
-            if (isNaN(rounds) || rounds < 1) rounds = 1;
-            if (rounds > 10) rounds = 10; 
+            let rounds = parseInt(totalRoundsInput.value) || 3;
+            if (rounds < 1) rounds = 1; if (rounds > 10) rounds = 10;
             totalRoundsInput.value = rounds;
 
-            let savedTexts = {};
-            for(let i = 1; i <= 10; i++) {
-                let existingTextarea = document.getElementById(`textarea-round-${i}`);
-                if(existingTextarea) {
-                    savedTexts[i] = existingTextarea.value;
-                } else if (i === 1) {
-                    savedTexts[1] = presetRound1Text;
+            // 備份現有選單數值
+            let backupDropdowns = {};
+            for(let r = 1; r <= 10; r++) {
+                backupDropdowns[r] = [];
+                for(let i = 0; i < 16; i++) {
+                    let selItem = document.getElementById(`sel-item-${r}-${i}`), selQty = document.getElementById(`sel-qty-${r}-${i}`);
+                    if(selItem && selQty) backupDropdowns[r].push({ name: selItem.value, qty: parseInt(selQty.value) });
                 }
             }
 
-            tabHeaders.innerHTML = '';
-            tabContents.innerHTML = '';
+            tabHeaders.innerHTML = ''; tabContents.innerHTML = '';
 
-            for (let i = 1; i <= rounds; i++) {
+            for (let r = 1; r <= rounds; r++) {
                 let btn = document.createElement('button');
-                btn.type = "button";
-                btn.className = `tab-btn ${i === 1 ? 'active' : ''}`;
-                btn.id = `tab-btn-${i}`;
-                btn.innerText = `第 ${i} 回合`;
-                btn.onclick = function() { switchTab(i); };
+                btn.type = "button"; btn.className = `tab-btn ${r === 1 ? 'active' : ''}`; btn.id = `tab-btn-${r}`; btn.innerText = `第 ${r} 回合`;
+                btn.onclick = function() { switchTab(r); };
                 tabHeaders.appendChild(btn);
 
                 let panel = document.createElement('div');
-                panel.className = `tab-content-panel ${i === 1 ? 'active' : ''}`;
-                panel.id = `tab-panel-${i}`;
+                panel.className = `tab-content-panel ${r === 1 ? 'active' : ''}`; panel.id = `tab-panel-${r}`;
                 
-                let editorContainer = document.createElement('div');
-                editorContainer.className = 'editor-container';
+                let flexLayout = document.createElement('div');
+                flexLayout.className = 'editor-flex-layout';
 
-                // 左邊行號區
-                let numDiv = document.createElement('div');
-                numDiv.className = 'line-numbers';
-                numDiv.id = `lines-round-${i}`;
-                numDiv.innerHTML = createLineNumbersText();
-
-                // 右邊輸入框
+                // 左側：複製貼上區
+                let pasteZone = document.createElement('div');
+                pasteZone.className = 'paste-box-zone';
+                
                 let textarea = document.createElement('textarea');
-                textarea.id = `textarea-round-${i}`;
-                textarea.placeholder = `請在此貼上「第 ${i} 回合」的 16 行 Excel 物資清單...`;
-                textarea.wrap = 'off'; 
-                
-                if (savedTexts[i]) {
-                    textarea.value = savedTexts[i];
-                }
+                textarea.id = `txt-paste-${r}`;
+                textarea.placeholder = `【文字複製貼上區】\n請直接在此貼上 Excel 或文字清單\n格式如：眼鏡 * 2`;
+                if(presetTexts[r]) textarea.value = presetTexts[r];
 
-                // 當輸入內容改變時，動態同步計算高度，確保拉長時行號仍貼齊
-                textarea.oninput = function() {
-                    let lineCount = this.value.split('\n').length;
-                    let maxLines = Math.max(lineCount, 16);
-                    let numArr = [];
-                    for(let k=1; k<=maxLines; k++) numArr.push(k);
-                    numDiv.innerHTML = numArr.join('<br>');
-                };
-                
-                editorContainer.appendChild(numDiv);
-                editorContainer.appendChild(textarea);
-                panel.appendChild(editorContainer);
-                tabContents.appendChild(panel);
-                
-                // 觸發一次 input 確保初始文字長度也有正確的行號數量
-                textarea.oninput();
-            }
-        }
+                let parseBtn = document.createElement('button');
+                parseBtn.type = "button"; parseBtn.className = "btn"; parseBtn.style.width = "100%";
+                parseBtn.innerText = "📋 解析並帶入右側下拉單";
+                parseBtn.onclick = function() { parseTextToDropdown(r); };
 
-        function switchTab(targetIndex) {
-            let rounds = parseInt(totalRoundsInput.value);
-            for(let i = 1; i <= rounds; i++) {
-                let btn = document.getElementById(`tab-btn-${i}`);
-                let panel = document.getElementById(`tab-panel-${i}`);
-                if(btn && panel) {
-                    if(i === targetIndex) {
-                        btn.classList.add('active');
-                        panel.classList.add('active');
+                pasteZone.appendChild(textarea);
+                pasteZone.appendChild(parseBtn);
+
+                // 右側：下拉式清單區
+                let gridContainer = document.createElement('div');
+                gridContainer.className = 'dropdown-grid-container';
+
+                for (let i = 0; i < 16; i++) {
+                    let row = document.createElement('div'); row.className = 'item-row';
+                    let numSpan = document.createElement('span'); numSpan.className = 'item-num'; numSpan.innerText = i + 1;
+
+                    let selectItem = document.createElement('select'); selectItem.className = 'select-item'; selectItem.id = `sel-item-${r}-${i}`;
+                    availableItems.forEach(t => { let o = document.createElement('option'); o.value = t; o.innerText = t; selectItem.appendChild(o); });
+
+                    let selectQty = document.createElement('select'); selectQty.className = 'select-qty'; selectQty.id = `sel-qty-${r}-${i}`;
+                    for(let q = 1; q <= 10; q++) { let o = document.createElement('option'); o.value = q; o.innerText = `${q} 個`; selectQty.appendChild(o); }
+
+                    selectItem.onchange = function() { selectQty.style.visibility = (this.value === "炸彈" || this.value === "（空）") ? "hidden" : "visible"; };
+
+                    // 給初次初始值
+                    if (backupDropdowns[r] && backupDropdowns[r][i]) {
+                        selectItem.value = backupDropdowns[r][i].name; selectQty.value = backupDropdowns[r][i].qty;
                     } else {
-                        btn.classList.remove('active');
-                        panel.classList.remove('active');
+                        selectItem.value = "（空）"; selectQty.value = 1;
                     }
+                    selectItem.onchange();
+
+                    row.appendChild(numSpan); row.appendChild(selectItem); row.appendChild(selectQty);
+                    gridContainer.appendChild(row);
+                }
+
+                flexLayout.appendChild(pasteZone);
+                flexLayout.appendChild(gridContainer);
+                panel.appendChild(flexLayout);
+                tabContents.appendChild(panel);
+
+                // 首次載入自動把文字預設值推入下拉單
+                if (presetTexts[r] && (!backupDropdowns[r] || backupDropdowns[r].length === 0)) {
+                    parseTextToDropdown(r);
                 }
             }
         }
 
-        function parseSingleTabText(textValue) {
-            let lines = textValue.split('\n')
-                                .map(line => line.trim())
-                                .filter(line => line.length > 0);
+        // 把左邊文字框解析到右邊下拉
+        function parseTextToDropdown(roundIndex) {
+            let txt = document.getElementById(`txt-paste-${roundIndex}`).value;
+            let lines = txt.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            let items = [];
             
-            let roundItems = [];
             lines.forEach(line => {
                 let match = line.match(/^([^\*,x,X,\s，、]+)(?:\s*[\*,x,X,，,、,\s,數量]+\s*(\d+))?/);
                 if (match) {
                     let name = match[1].trim();
                     if(name === "品項" || name === "品項*數量") return;
                     let qty = match[2] ? parseInt(match[2]) : 1;
-                    roundItems.push({ name: name, qty: qty });
+                    items.push({ name: name, qty: qty });
                 }
             });
 
-            while (roundItems.length < 16) {
-                roundItems.push({ name: "（待前方支援）", qty: 1 });
+            for (let i = 0; i < 16; i++) {
+                let selItem = document.getElementById(`sel-item-${roundIndex}-${i}`);
+                let selQty = document.getElementById(`sel-qty-${roundIndex}-${i}`);
+                if(selItem && selQty) {
+                    if (items[i]) {
+                        // 檢查名稱是否在清冊內，不在則自動追加
+                        if (!availableItems.includes(items[i].name)) {
+                            let opt = document.createElement('option'); opt.value = items[i].name; opt.innerText = items[i].name;
+                            selItem.appendChild(opt);
+                        }
+                        selItem.value = items[i].name;
+                        selQty.value = items[i].qty;
+                    } else {
+                        selItem.value = "（空）";
+                        selQty.value = 1;
+                    }
+                    selItem.onchange();
+                }
             }
-            return roundItems.slice(0, 16);
+        }
+
+        function switchTab(targetIndex) {
+            let rounds = parseInt(totalRoundsInput.value);
+            for(let i = 1; i <= rounds; i++) {
+                let btn = document.getElementById(`tab-btn-${i}`), panel = document.getElementById(`tab-panel-${i}`);
+                if(btn && panel) {
+                    if(i === targetIndex) { btn.classList.add('active'); panel.classList.add('active'); }
+                    else { btn.classList.remove('active'); panel.classList.remove('active'); }
+                }
+            }
         }
 
         function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+            for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array;
+        }
+
+        function updateTimerDisplay() {
+            let mins = Math.floor(timeLeft / 60), secs = timeLeft % 60;
+            timerDisplay.innerText = `${mins < 10 ? '0'+mins : mins}:${secs < 10 ? '0'+secs : secs}`;
+            progressBar.style.width = `${(timeLeft / initialTimeLimit) * 100}%`;
+
+            if (gameState === 'playing' && timeLeft <= 10 && timeLeft > 0) {
+                timerDisplay.classList.add('danger'); document.body.classList.add('panic-mode');
+            } else {
+                timerDisplay.classList.remove('danger'); document.body.classList.remove('panic-mode');
             }
-            return array;
         }
 
         function applySettingsAndReset() {
-            let roundVal = parseInt(totalRoundsInput.value);
-            if (isNaN(roundVal) || roundVal < 1) return alert("請輸入有效的任務回合數");
-            maxRounds = roundVal;
-            
-            let secVal = parseInt(secondsInput.value);
-            if (isNaN(secVal) || secVal < 1) return alert("請輸入有效的閃動間隔秒數");
-            flipIntervalSeconds = secVal;
-
-            allRoundsData = [];
-            let hasEmptyTab = false;
-
-            for (let i = 1; i <= maxRounds; i++) {
-                let txtArea = document.getElementById(`textarea-round-${i}`);
-                let txtValue = txtArea ? txtArea.value.trim() : "";
-                
-                if (txtValue === "") {
-                    hasEmptyTab = true;
-                }
-                
-                let roundParsedData = parseSingleTabText(txtValue);
-                allRoundsData.push(roundParsedData);
-            }
-
-            if (hasEmptyTab) {
-                if(!confirm("注意到有部分回合尚未貼上支援題目。確定要繼續部署嗎？")) {
-                    return;
-                }
-            }
-
-            currentRound = 1;
-            importArea.style.display = 'none'; 
-            
+            document.body.classList.remove('panic-mode');
+            maxRounds = parseInt(totalRoundsInput.value) || 3;
+            flipIntervalSeconds = parseInt(secondsInput.value) || 5;
+            initialTimeLimit = parseInt(timerLimitInput.value) || 120;
+            timeLeft = initialTimeLimit;
+            currentRound = 1; importArea.style.display = 'none';
             initRoundBoard();
         }
 
         function initRoundBoard() {
-            if (autoFlipTimer) {
-                clearInterval(autoFlipTimer);
-                autoFlipTimer = null;
-            }
-            
-            gameState = 'ready';
-            mainGameBtn.disabled = false;
-            mainGameBtn.className = "btn btn-main btn-start";
-            mainGameBtn.innerText = "▶ 開始遊戲";
-            statusHint.innerText = `第 ${currentRound} 回合前線格子準備就緒！請點擊【開始遊戲】。`;
-            
-            board.innerHTML = '';
-            flippedCount = 0;
-            flippedCountDisplay.innerText = flippedCount;
-            currentRoundDisplay.innerText = currentRound;
-            totalRoundsDisplay.innerText = maxRounds;
+            if (autoFlipTimer) clearInterval(autoFlipTimer);
+            if (countdownTimer) clearInterval(countdownTimer);
+            document.body.classList.remove('panic-mode');
+            timeLeft = initialTimeLimit; updateTimerDisplay();
 
-            let currentRoundData = allRoundsData[currentRound - 1] || [];
+            gameState = 'ready'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-start"; mainGameBtn.innerText = "▶ START GAME";
+            pauseGameBtn.style.display = "none"; pauseGameBtn.innerText = "⏸️ PAUSE";
+            statusHint.innerText = `第 ${currentRound} 回合戰略配置就緒！`;
+            
+            board.innerHTML = ''; flippedCount = 0; flippedCountDisplay.innerText = flippedCount;
+            currentRoundDisplay.innerText = currentRound; totalRoundsDisplay.innerText = maxRounds;
+
+            let currentRoundData = [];
+            for (let i = 0; i < 16; i++) {
+                let selItem = document.getElementById(`sel-item-${currentRound}-${i}`), selQty = document.getElementById(`sel-qty-${currentRound}-${i}`);
+                if (selItem && selQty) currentRoundData.push({ name: selItem.value, qty: parseInt(selQty.value) });
+                else currentRoundData.push({ name: "（空）", qty: 1 });
+            }
+
             const shuffledItems = shuffle([...currentRoundData]);
 
             shuffledItems.forEach((item) => {
-                const card = document.createElement('div');
-                card.classList.add('card');
-
+                const card = document.createElement('div'); card.classList.add('card');
                 let contentHtml = "";
                 if (item.name === "炸彈") {
-                    contentHtml = `
-                        <div class="card-face card-front">
-                            <img src="${bombIconUrl}" class="bomb-img" alt="炸彈">
-                        </div>`;
+                    card.dataset.isBomb = "true";
+                    contentHtml = `<div class="card-face card-front"><img src="${bombIconUrl}" class="bomb-img" alt="炸彈"></div>`;
+                } else if (item.name === "（空）") {
+                    contentHtml = `<div class="card-face card-front"><span class="item-name" style="color:#94a3b8 !important;">無物資</span></div>`;
                 } else {
-                    contentHtml = `
-                        <div class="card-face card-front">
-                            <span class="item-name">${item.name}</span>
-                            <span class="qty-tag">* ${item.qty}</span>
-                        </div>`;
+                    contentHtml = `<div class="card-face card-front"><span class="item-name">${item.name}</span><span class="qty-tag">* ${item.qty}</span></div>`;
                 }
-
-                card.innerHTML = `
-                    <div class="card-face card-back">?</div>
-                    ${contentHtml}
-                `;
-
-                card.addEventListener('click', function() {
-                    if (gameState !== 'playing') return; 
-                    if (!this.classList.contains('flipped')) {
-                        exposeCard(this, false);
-                    }
-                });
-                
+                card.innerHTML = `<div class="card-face card-back">?</div>${contentHtml}`;
+                card.addEventListener('click', function() { if (gameState === 'playing' && !this.classList.contains('flipped')) exposeCard(this, false); });
                 board.appendChild(card);
             });
         }
 
         function handleMainBtnClick() {
-            if (allRoundsData.length === 0) {
-                applySettingsAndReset();
+            if(gameState === 'ready') {
+                gameState = 'playing'; mainGameBtn.disabled = true; mainGameBtn.innerText = "🚀 OPERATING..."; pauseGameBtn.style.display = "block";
+                statusHint.innerText = `⏱️ 戰場干擾中！每 ${flipIntervalSeconds} 秒隨機解鎖一個項目！`;
+                document.querySelectorAll('.card').forEach(c => c.classList.add('playable'));
+                startAutoFlipTimer(); startCountdownTimer();
+            } else if (gameState === 'round_end') {
+                currentRound++; initRoundBoard();
+            } else {
+                currentRound = 1; initRoundBoard();
             }
+        }
 
-            if (gameState === 'ready') {
-                gameState = 'playing';
-                mainGameBtn.disabled = true; 
-                mainGameBtn.innerText = "🚀 前線物資搜集中";
-                statusHint.innerText = `⏱️ 格子無規律閃動中！每 ${flipIntervalSeconds} 秒隨機自動解鎖一個項目...`;
-
-                const cards = document.querySelectorAll('.card');
-                cards.forEach(card => card.classList.add('playable'));
-
-                startAutoFlipTimer();
-            } 
-            else if (gameState === 'round_end') {
-                currentRound++;
-                initRoundBoard();
-            } 
-            else if (gameState === 'all_finished') {
-                currentRound = 1;
-                initRoundBoard();
+        function handlePauseBtnClick() {
+            if (gameState === 'playing') {
+                gameState = 'paused'; clearInterval(autoFlipTimer); clearInterval(countdownTimer); document.body.classList.remove('panic-mode');
+                pauseGameBtn.innerText = "▶️ RESUME"; statusHint.innerText = "⏸️ 戰局暫停。";
+                document.querySelectorAll('.card').forEach(c => c.classList.remove('playable'));
+            } else if (gameState === 'paused') {
+                gameState = 'playing'; pauseGameBtn.innerText = "⏸️ PAUSE"; statusHint.innerText = `⏱️ 每 ${flipIntervalSeconds} 秒隨機解鎖。`;
+                document.querySelectorAll('.card').forEach(c => c.classList.add('playable'));
+                startAutoFlipTimer(); startCountdownTimer();
             }
         }
 
         function exposeCard(cardElement, isAuto = false) {
             cardElement.classList.add('flipped');
-            if (isAuto) {
-                cardElement.classList.add('auto-flipped');
-            }
-            flippedCount++;
-            flippedCountDisplay.innerText = flippedCount;
+            if (isAuto) cardElement.classList.add('auto-flipped');
+            if (cardElement.dataset.isBomb === "true") cardElement.classList.add('bomb-exploded');
+            flippedCount++; flippedCountDisplay.innerText = flippedCount;
+            if (flippedCount === 16) endRoundSuccess();
+        }
 
-            if (flippedCount === 16) {
-                if (autoFlipTimer) {
-                    clearInterval(autoFlipTimer);
-                    autoFlipTimer = null;
-                }
-                
-                if (currentRound < maxRounds) {
-                    gameState = 'round_end';
-                    mainGameBtn.disabled = false; 
-                    mainGameBtn.className = "btn btn-main btn-next";
-                    mainGameBtn.innerText = "⏭️ 前進下一回合任務";
-                    statusHint.innerText = `第 ${currentRound} 回合支援物資已全數開牌！畫面已固定，對帳計分完畢後請點擊【前進下一回合任務】`;
-                } else {
-                    gameState = 'all_finished';
-                    mainGameBtn.disabled = false;
-                    mainGameBtn.className = "btn btn-main btn-start";
-                    mainGameBtn.innerText = "🔄 重啟前線戰局";
-                    statusHint.innerText = `🎉 報告長官！本次部署的 ${maxRounds} 個支援前線任務已全部完成！點擊按鈕可重新啟動。`;
-                }
+        function endRoundSuccess() {
+            clearInterval(autoFlipTimer); clearInterval(countdownTimer); pauseGameBtn.style.display = "none"; document.body.classList.remove('panic-mode');
+            if (currentRound < maxRounds) {
+                gameState = 'round_end'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-next"; mainGameBtn.innerText = "⏭️ NEXT STAGE";
+                statusHint.innerText = `✨ 第 ${currentRound} 回合全面解鎖！`;
+            } else {
+                gameState = 'all_finished'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-start"; mainGameBtn.innerText = "🔄 RESTART WAR";
+                statusHint.innerText = `🎉 全系列任務已全部戰勝！`;
+            }
+        }
+
+        function endRoundTimeout() {
+            clearInterval(autoFlipTimer); clearInterval(countdownTimer); pauseGameBtn.style.display = "none"; document.body.classList.remove('panic-mode');
+            if (currentRound < maxRounds) {
+                gameState = 'round_end'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-next"; mainGameBtn.innerText = "⏭️ TIME OVER! NEXT";
+                statusHint.innerText = `❌ 第 ${currentRound} 回合截止，請挺進下一關。`;
+            } else {
+                gameState = 'all_finished'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-start"; mainGameBtn.innerText = "🔄 RESTART WAR";
+                statusHint.innerText = `❌ 戰局結束！`;
             }
         }
 
         function startAutoFlipTimer() {
-            if (autoFlipTimer) clearInterval(autoFlipTimer);
-            
+            clearInterval(autoFlipTimer);
             autoFlipTimer = setInterval(() => {
-                const unFlippedCards = Array.from(document.querySelectorAll('.card:not(.flipped)'));
-                
-                if (unFlippedCards.length === 0) return;
+                const unFlipped = Array.from(document.querySelectorAll('.card:not(.flipped)'));
+                if (unFlipped.length === 0) return;
+                exposeCard(unFlipped[Math.floor(Math.random() * unFlipped.length)], true);
+            }, flipIntervalSeconds * 1000);
+        }
 
-                const randomIndex = Math.floor(Math.random() * unFlippedCards.length);
-                const randomCard = unFlippedCards[randomIndex];
-
-                exposeCard(randomCard, true);
-
-            }, flipIntervalSeconds * 1000); 
+        function startCountdownTimer() {
+            clearInterval(countdownTimer); countdownTimer = setInterval(() => { timeLeft--; updateTimerDisplay(); if (timeLeft <= 0) endRoundTimeout(); }, 1000);
         }
 
         generateTabs();
