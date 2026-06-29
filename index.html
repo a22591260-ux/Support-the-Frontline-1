@@ -357,15 +357,15 @@
         <div class="setup-row">
             <div class="setup-item">
                 <span>🎯 總任務：</span>
-                <input type="number" id="totalRoundsInput" value="3" min="1" max="10" onchange="generateTabs()"> 回合
+                <input type="number" id="totalRoundsInput" value="3" min="1" max="10" onchange="generateTabs(); saveConfigToStorage();"> 回合
             </div>
             <div class="setup-item">
                 <span>⏱️ 閃動速度：</span>
-                <input type="number" id="secondsInput" value="5" min="1" max="60"> 秒/次
+                <input type="number" id="secondsInput" value="5" min="1" max="60" onchange="saveConfigToStorage()"> 秒/次
             </div>
             <div class="setup-item">
                 <span>⏳ 回合時限：</span>
-                <input type="number" id="timerLimitInput" value="120" min="5" max="600"> 秒
+                <input type="number" id="timerLimitInput" value="120" min="5" max="600" onchange="saveConfigToStorage()"> 秒
             </div>
             <button class="btn" onclick="toggleImportArea()">🛠️ 配置戰略物資</button>
         </div>
@@ -407,6 +407,7 @@
 
         const availableItems = ["眼鏡", "水壺", "鞋子", "鑰匙", "手錶", "背包", "雨傘", "帽子", "手機", "耳機", "鉛筆", "書本", "杯子", "肥皂", "外套", "錢包", "炸彈", "（空）"];
 
+        // 預設內容（僅在使用者瀏覽器無紀錄時使用）
         const presetTexts = {
             1: `眼鏡 * 2\n眼鏡 * 2\n水壺 * 4\n鞋子 * 3\n鑰匙 * 1\n手錶 * 5\n背包 * 2\n雨傘 * 3\n帽子 * 4\n手機 * 1\n耳機 * 5\n鉛筆 * 2\n書本 * 3\n杯子 * 4\n炸彈\n肥皂 * 1`,
             2: `炸彈\n炸彈\n手機 * 2\n錢包 * 1\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）`,
@@ -420,6 +421,38 @@
         const progressBar = document.getElementById('progressBar'), statusHint = document.getElementById('statusHint');
         const importArea = document.getElementById('importArea'), mainGameBtn = document.getElementById('mainGameBtn'), pauseGameBtn = document.getElementById('pauseGameBtn');
         const tabHeaders = document.getElementById('tabHeaders'), tabContents = document.getElementById('tabContents');
+
+        // 🟢 【新增】將頂部三個數字設定儲存至 localStorage
+        function saveConfigToStorage() {
+            localStorage.setItem('game_totalRounds', totalRoundsInput.value);
+            localStorage.setItem('game_seconds', secondsInput.value);
+            localStorage.setItem('game_timerLimit', timerLimitInput.value);
+        }
+
+        // 🟢 【新增】將特定回合的文字框與下拉單資料儲存至 localStorage
+        function saveRoundDataToStorage(roundIndex) {
+            let txtValue = document.getElementById(`txt-paste-${roundIndex}`)?.value || '';
+            localStorage.setItem(`game_txt_round_${roundIndex}`, txtValue);
+
+            let dropdowns = [];
+            for(let i = 0; i < 16; i++) {
+                let selItem = document.getElementById(`sel-item-${roundIndex}-${i}`);
+                let selQty = document.getElementById(`sel-qty-${roundIndex}-${i}`);
+                if(selItem && selQty) {
+                    dropdowns.push({ name: selItem.value, qty: parseInt(selQty.value) });
+                }
+            }
+            if(dropdowns.length > 0) {
+                localStorage.setItem(`game_drop_round_${roundIndex}`, JSON.stringify(dropdowns));
+            }
+        }
+
+        // 🟢 【新增】從 localStorage 讀取頂部數字設定
+        function loadConfigFromStorage() {
+            if(localStorage.getItem('game_totalRounds')) totalRoundsInput.value = localStorage.getItem('game_totalRounds');
+            if(localStorage.getItem('game_seconds')) secondsInput.value = localStorage.getItem('game_seconds');
+            if(localStorage.getItem('game_timerLimit')) timerLimitInput.value = localStorage.getItem('game_timerLimit');
+        }
 
         function toggleImportArea() { importArea.style.display = (importArea.style.display === 'block') ? 'none' : 'block'; }
 
@@ -460,12 +493,26 @@
                 let textarea = document.createElement('textarea');
                 textarea.id = `txt-paste-${r}`;
                 textarea.placeholder = `【文字複製貼上區】\n請直接在此貼上 Excel 或文字清單\n格式如：眼鏡 * 2`;
-                if(presetTexts[r]) textarea.value = presetTexts[r];
+                
+                // 🟢 【修改】優先從儲存空間抓取文字，沒有才用 preset
+                let storedTxt = localStorage.getItem(`game_txt_round_${r}`);
+                if (storedTxt !== null) {
+                    textarea.value = storedTxt;
+                } else if(presetTexts[r]) {
+                    textarea.value = presetTexts[r];
+                }
+                
+                // 當使用者手動修改文字框，即時儲存
+                textarea.oninput = (function(roundIdx) {
+                    return function() { saveRoundDataToStorage(roundIdx); }
+                })(r);
 
                 let parseBtn = document.createElement('button');
                 parseBtn.type = "button"; parseBtn.className = "btn"; parseBtn.style.width = "100%";
                 parseBtn.innerText = "📋 解析並帶入右側下拉單";
-                parseBtn.onclick = function() { parseTextToDropdown(r); };
+                parseBtn.onclick = (function(roundIdx) {
+                    return function() { parseTextToDropdown(roundIdx); };
+                })(r);
 
                 pasteZone.appendChild(textarea);
                 pasteZone.appendChild(parseBtn);
@@ -473,6 +520,10 @@
                 // 右側：下拉式清單區
                 let gridContainer = document.createElement('div');
                 gridContainer.className = 'dropdown-grid-container';
+
+                // 🟢 【新增】嘗試從儲存空間拿這回合的下拉單歷史資料
+                let storedDrop = localStorage.getItem(`game_drop_round_${r}`);
+                let parsedDrop = storedDrop ? JSON.parse(storedDrop) : null;
 
                 for (let i = 0; i < 16; i++) {
                     let row = document.createElement('div'); row.className = 'item-row';
@@ -484,12 +535,31 @@
                     let selectQty = document.createElement('select'); selectQty.className = 'select-qty'; selectQty.id = `sel-qty-${r}-${i}`;
                     for(let q = 1; q <= 10; q++) { let o = document.createElement('option'); o.value = q; o.innerText = `${q} 個`; selectQty.appendChild(o); }
 
-                    selectItem.onchange = function() { selectQty.style.visibility = (this.value === "炸彈" || this.value === "（空）") ? "hidden" : "visible"; };
+                    // 連動隱藏
+                    selectItem.onchange = (function(roundIdx) {
+                        return function() { 
+                            selectQty.style.visibility = (this.value === "炸彈" || this.value === "（空）") ? "hidden" : "visible";
+                            saveRoundDataToStorage(roundIdx); // 🟢 變更選項時存檔
+                        };
+                    })(r);
+                    
+                    selectQty.onchange = (function(roundIdx) {
+                        return function() { saveRoundDataToStorage(roundIdx); }; // 🟢 變更數量時存檔
+                    })(r);
 
-                    // 給初次初始值
-                    if (backupDropdowns[r] && backupDropdowns[r][i]) {
+                    // 給值邏輯
+                    if (parsedDrop && parsedDrop[i]) {
+                        // 1. 優先用 LocalStorage 的下拉資料
+                        if (!availableItems.includes(parsedDrop[i].name)) {
+                            let opt = document.createElement('option'); opt.value = parsedDrop[i].name; opt.innerText = parsedDrop[i].name;
+                            selectItem.appendChild(opt);
+                        }
+                        selectItem.value = parsedDrop[i].name; selectQty.value = parsedDrop[i].qty;
+                    } else if (backupDropdowns[r] && backupDropdowns[r][i] && backupDropdowns[r][i].name !== "（空）") {
+                        // 2. 次之用記憶體暫存的備份
                         selectItem.value = backupDropdowns[r][i].name; selectQty.value = backupDropdowns[r][i].qty;
                     } else {
+                        // 3. 最後才用預設空值
                         selectItem.value = "（空）"; selectQty.value = 1;
                     }
                     selectItem.onchange();
@@ -503,8 +573,8 @@
                 panel.appendChild(flexLayout);
                 tabContents.appendChild(panel);
 
-                // 首次載入自動把文字預設值推入下拉單
-                if (presetTexts[r] && (!backupDropdowns[r] || backupDropdowns[r].length === 0)) {
+                // 如果是第一次完全沒歷史紀錄，才用文字框的 preset 推入下拉
+                if (!storedDrop && presetTexts[r] && (!backupDropdowns[r] || backupDropdowns[r].length === 0)) {
                     parseTextToDropdown(r);
                 }
             }
@@ -531,7 +601,6 @@
                 let selQty = document.getElementById(`sel-qty-${roundIndex}-${i}`);
                 if(selItem && selQty) {
                     if (items[i]) {
-                        // 檢查名稱是否在清冊內，不在則自動追加
                         if (!availableItems.includes(items[i].name)) {
                             let opt = document.createElement('option'); opt.value = items[i].name; opt.innerText = items[i].name;
                             selItem.appendChild(opt);
@@ -542,6 +611,7 @@
                         selItem.value = "（空）";
                         selQty.value = 1;
                     }
+                    // 這裡面會觸發 onchange() 進而調用 saveRoundDataToStorage()
                     selItem.onchange();
                 }
             }
@@ -656,8 +726,13 @@
             if (flippedCount === 16) endRoundSuccess();
         }
 
+        function _clearAllTimers() {
+            if(autoFlipTimer) clearInterval(autoFlipTimer);
+            if(countdownTimer) clearInterval(countdownTimer);
+        }
+
         function endRoundSuccess() {
-            clearInterval(autoFlipTimer); clearInterval(countdownTimer); pauseGameBtn.style.display = "none"; document.body.classList.remove('panic-mode');
+            _clearAllTimers(); pauseGameBtn.style.display = "none"; document.body.classList.remove('panic-mode');
             if (currentRound < maxRounds) {
                 gameState = 'round_end'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-next"; mainGameBtn.innerText = "⏭️ NEXT STAGE";
                 statusHint.innerText = `✨ 第 ${currentRound} 回合全面解鎖！`;
@@ -668,7 +743,7 @@
         }
 
         function endRoundTimeout() {
-            clearInterval(autoFlipTimer); clearInterval(countdownTimer); pauseGameBtn.style.display = "none"; document.body.classList.remove('panic-mode');
+            _clearAllTimers(); pauseGameBtn.style.display = "none"; document.body.classList.remove('panic-mode');
             if (currentRound < maxRounds) {
                 gameState = 'round_end'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-next"; mainGameBtn.innerText = "⏭️ TIME OVER! NEXT";
                 statusHint.innerText = `❌ 第 ${currentRound} 回合截止，請挺進下一關。`;
@@ -691,8 +766,10 @@
             clearInterval(countdownTimer); countdownTimer = setInterval(() => { timeLeft--; updateTimerDisplay(); if (timeLeft <= 0) endRoundTimeout(); }, 1000);
         }
 
-        generateTabs();
-        applySettingsAndReset();
+        // 🟢 【新增】網頁初始化啟動點
+        loadConfigFromStorage(); // 先從硬碟拿頂部數據
+        generateTabs();          // 根據數據產生對應回合數的 Tab 面板（面板內部也會讀取各自回合的 LocalStorage）
+        applySettingsAndReset(); // 初始化遊戲戰場
     </script>
 </body>
 </html>
