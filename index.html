@@ -335,6 +335,7 @@
         .btn-start { background: linear-gradient(135deg, #00ff87 0%, #60efff 100%); color: #0f172a; box-shadow: 0 4px 15px rgba(0, 255, 135, 0.4); }
         .btn-start:hover { box-shadow: 0 4px 25px rgba(0, 255, 135, 0.7); transform: translateY(-2px); }
         .btn-pause { background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%); color: white; }
+        .btn-end-round { background: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%); color: white; border: 1px solid #4facfe; }
         .btn-next { background: linear-gradient(135deg, #ff9f43 0%, #ff4757 100%); color: white; animation: pulseGlow 1.2s infinite; }
 
         @keyframes pulseGlow { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
@@ -354,12 +355,10 @@
                 <input type="number" id="totalRoundsInput" value="3" min="1" max="10" onchange="generateTabs(); saveConfigToStorage();"> 回合
             </div>
             <div class="setup-item">
-                <!-- 🛠️ 已將預設改為 2 秒/次 -->
                 <span>⏱️ 閃動速度：</span>
                 <input type="number" id="secondsInput" value="2" min="1" max="60" onchange="saveConfigToStorage()"> 秒/次
             </div>
             <div class="setup-item">
-                <!-- 🛠️ 已將預設改為 120 秒 -->
                 <span>⏳ 回合時限：</span>
                 <input type="number" id="timerLimitInput" value="120" min="5" max="600" onchange="saveConfigToStorage()"> 秒
             </div>
@@ -388,6 +387,7 @@
             <div class="control-btns">
                 <button id="mainGameBtn" class="btn btn-main btn-start" onclick="handleMainBtnClick()">▶ START GAME</button>
                 <button id="pauseGameBtn" class="btn btn-main btn-pause" style="display: none;" onclick="handlePauseBtnClick()">⏸️ PAUSE</button>
+                <button id="endRoundBtn" class="btn btn-main btn-end-round" style="display: none;" onclick="handleEndRoundBtnClick()">⏭️ 結束該回合</button>
             </div>
         </div>
 
@@ -415,6 +415,7 @@
         const timerLimitInput = document.getElementById('timerLimitInput'), timerDisplay = document.getElementById('timerDisplay');
         const progressBar = document.getElementById('progressBar'), statusHint = document.getElementById('statusHint');
         const importArea = document.getElementById('importArea'), mainGameBtn = document.getElementById('mainGameBtn'), pauseGameBtn = document.getElementById('pauseGameBtn');
+        const endRoundBtn = document.getElementById('endRoundBtn'); // 🆕
         const tabHeaders = document.getElementById('tabHeaders'), tabContents = document.getElementById('tabContents');
 
         function saveConfigToStorage() {
@@ -513,7 +514,8 @@
                     availableItems.forEach(t => { let o = document.createElement('option'); o.value = t; o.innerText = t; selectItem.appendChild(o); });
 
                     let selectQty = document.createElement('select'); selectQty.className = 'select-qty'; selectQty.id = `sel-qty-${r}-${i}`;
-                    for(let q = 1; q <= 10; q++) { let o = document.createElement('option'); o.value = q; o.innerText = `${q} 個`; selectQty.appendChild(o); }
+                    // 🛠️ 物品上限調整：將這裡原本的 10 改為 20
+                    for(let q = 1; q <= 20; q++) { let o = document.createElement('option'); o.value = q; o.innerText = `${q} 個`; selectQty.appendChild(o); }
 
                     selectItem.onchange = (function(roundIdx) {
                         return function() { 
@@ -574,7 +576,9 @@
                             let opt = document.createElement('option'); opt.value = items[i].name; opt.innerText = items[i].name;
                             selItem.appendChild(opt);
                         }
-                        selItem.value = items[i].name; selQty.value = items[i].qty;
+                        selItem.value = items[i].name; 
+                        // 如果解析出來的數量大於20，限制在20
+                        selQty.value = items[i].qty > 20 ? 20 : items[i].qty;
                     } else {
                         selItem.value = "（空）"; selQty.value = 1;
                     }
@@ -628,6 +632,7 @@
 
             gameState = 'ready'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-start"; mainGameBtn.innerText = "▶ START GAME";
             pauseGameBtn.style.display = "none"; pauseGameBtn.innerText = "⏸️ PAUSE";
+            endRoundBtn.style.display = "none"; // 🆕 初始化時隱藏結束按鈕
             statusHint.innerText = `第 ${currentRound} 回合戰略配置就緒！`;
             
             board.innerHTML = ''; flippedCount = 0; flippedCountDisplay.innerText = flippedCount;
@@ -661,7 +666,9 @@
 
         function handleMainBtnClick() {
             if(gameState === 'ready') {
-                gameState = 'playing'; mainGameBtn.disabled = true; mainGameBtn.innerText = "🚀 OPERATING..."; pauseGameBtn.style.display = "block";
+                gameState = 'playing'; mainGameBtn.disabled = true; mainGameBtn.innerText = "🚀 OPERATING..."; 
+                pauseGameBtn.style.display = "block";
+                endRoundBtn.style.display = "block"; // 🆕 遊戲開始時顯示結束按鈕
                 statusHint.innerText = `⏱️ 戰場干擾中！每 ${flipIntervalSeconds} 秒隨機解鎖一個項目！`;
                 document.querySelectorAll('.card').forEach(c => c.classList.add('playable'));
                 startAutoFlipTimer(); startCountdownTimer();
@@ -684,65 +691,75 @@
             }
         }
 
-        function exposeCard(cardElement, isAuto = false) {
-            cardElement.classList.add('flipped');
-            if (isAuto) cardElement.classList.add('auto-flipped');
-            if (cardElement.dataset.isBomb === "true") cardElement.classList.add('bomb-exploded');
-            flippedCount++; flippedCountDisplay.innerText = flippedCount;
-            
-            // 🛠️ 【修改點】移除原本「當 flippedCount === 16 就立刻提前結束關卡」的邏輯。
-            // 讓格子翻完後，提示改為已全數解鎖，但計時繼續進行。
-            if (flippedCount === 16) {
-                statusHint.innerText = `✨ 格子已全數解鎖！時間繼續倒數，請把握最後時間核對物資！`;
-            }
-        }
-
-        function _clearAllTimers() {
-            if(autoFlipTimer) clearInterval(autoFlipTimer);
-            if(countdownTimer) clearInterval(countdownTimer);
-        }
-
-        // 🛠️ 【修改點】此函式改由倒數至 0 秒時統一觸發判定
-        function endRoundTimeout() {
-            _clearAllTimers(); pauseGameBtn.style.display = "none"; document.body.classList.remove('panic-mode');
-            
-            // 時間到時，檢查是否完成了 16 格解鎖
-            if (flippedCount === 16) {
-                if (currentRound < maxRounds) {
-                    gameState = 'round_end'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-next"; mainGameBtn.innerText = "⏭️ 回合結束！前進下一關";
-                    statusHint.innerText = `🎉 時間到！本回合 16 格完美解鎖，挑戰成功！`;
-                } else {
-                    gameState = 'all_finished'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-start"; mainGameBtn.innerText = "🔄 重頭開始戰局";
-                    statusHint.innerText = `🏆 時間到！全系列任務均在時限內完成解鎖！`;
-                }
-            } else {
-                // 如果時間到了卻沒翻完
-                if (currentRound < maxRounds) {
-                    gameState = 'round_end'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-next"; mainGameBtn.innerText = "⏭️ TIME OVER! NEXT";
-                    statusHint.innerText = `❌ 時間截止！未能完全解鎖（${flippedCount}/16），請挺進下一關。`;
-                } else {
-                    gameState = 'all_finished'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-start"; mainGameBtn.innerText = "🔄 重頭開始戰局";
-                    statusHint.innerText = `❌ 戰局時間截止！最終解鎖度為 ${flippedCount}/16。`;
-                }
+        // 🆕 新增：點擊直接結束回合的邏輯
+        function handleEndRoundBtnClick() {
+            if (gameState === 'playing' || gameState === 'paused') {
+                endCurrentRound(false, "指揮官強制結束了這一回合！");
             }
         }
 
         function startAutoFlipTimer() {
-            clearInterval(autoFlipTimer);
             autoFlipTimer = setInterval(() => {
-                const unFlipped = Array.from(document.querySelectorAll('.card:not(.flipped)'));
-                if (unFlipped.length === 0) return;
-                exposeCard(unFlipped[Math.floor(Math.random() * unFlipped.length)], true);
+                let unexposedCards = Array.from(document.querySelectorAll('.card:not(.flipped)'));
+                if(unexposedCards.length > 0) {
+                    let randomCard = unexposedCards[Math.floor(Math.random() * unexposedCards.length)];
+                    exposeCard(randomCard, true);
+                }
             }, flipIntervalSeconds * 1000);
         }
 
         function startCountdownTimer() {
-            clearInterval(countdownTimer); countdownTimer = setInterval(() => { timeLeft--; updateTimerDisplay(); if (timeLeft <= 0) endRoundTimeout(); }, 1000);
+            countdownTimer = setInterval(() => {
+                timeLeft--; updateTimerDisplay();
+                if(timeLeft <= 0) {
+                    endCurrentRound(true, "⌛ 時間到！戰場已被全面鎖定！");
+                }
+            }, 1000);
         }
 
-        loadConfigFromStorage();
-        generateTabs();
-        applySettingsAndReset();
+        function exposeCard(cardElement, isAuto = false) {
+            cardElement.classList.add('flipped');
+            if(isAuto) cardElement.classList.add('auto-flipped');
+            
+            if(cardElement.dataset.isBomb === "true") {
+                cardElement.classList.add('bomb-exploded');
+            }
+
+            flippedCount++; flippedCountDisplay.innerText = flippedCount;
+            if(flippedCount >= 16) {
+                endCurrentRound(false, "🎉 恭喜！本回合所有戰略物資皆已解鎖！");
+            }
+        }
+
+        function endCurrentRound(isTimeout = false, message = "") {
+            gameState = 'round_end';
+            clearInterval(autoFlipTimer); clearInterval(countdownTimer);
+            document.body.classList.remove('panic-mode');
+            pauseGameBtn.style.display = "none";
+            endRoundBtn.style.display = "none"; // 🆕 結束回合後隱藏按鈕
+
+            // 揭曉所有尚未翻開的卡片
+            document.querySelectorAll('.card:not(.flipped)').forEach(c => c.classList.add('flipped'));
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('playable'));
+
+            statusHint.innerText = message;
+            mainGameBtn.disabled = false;
+
+            if (currentRound >= maxRounds) {
+                statusHint.innerText += " 🏁 總任務已全部完結！點擊【START】重回第一回合。";
+                mainGameBtn.className = "btn btn-main btn-start"; mainGameBtn.innerText = "🔄 RESET GAME";
+                gameState = 'game_over';
+            } else {
+                mainGameBtn.className = "btn btn-main btn-next"; mainGameBtn.innerText = "⏭️ NEXT ROUND";
+            }
+        }
+
+        // 初始化
+        window.onload = function() {
+            loadConfigFromStorage();
+            generateTabs();
+            applySettingsAndReset();
+        };
     </script>
 </body>
 </html>
