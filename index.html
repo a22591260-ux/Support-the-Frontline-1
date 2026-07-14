@@ -365,7 +365,7 @@
                 <input type="number" id="secondsInput" value="5" min="1" max="60" onchange="autoSaveSettings()"> 秒/次
             </div>
             <div class="setup-item">
-                <span>⏳ 當先前鋒預設時限：</span>
+                <span>⏳ 當前預設時限：</span>
                 <input type="number" id="timerLimitInput" value="120" min="5" max="600" onchange="autoSaveSettings()"> 秒
             </div>
             <button class="btn" onclick="toggleImportArea()">🛠️ 配置戰略物資</button>
@@ -415,7 +415,7 @@
 
         const availableItems = ["眼鏡", "水壺", "左鞋", "手錶", "粉筆", "毛巾盤", "領巾", "右鞋", "襪子", "名牌", "左腳", "右腳", "左手", "右手", "輔導員", "學員", "毛巾", "深蹲", "開合跳", "蛙跳", "伏地挺身", "炸彈", "（空）"];
 
-        // 系統最原始預設配置（唯讀備份）
+        // 系統最原始預設配置（經典 1~7 回合物資）
         const originalPresetTexts = {
             1: `眼鏡 * 1\n水壺 * 1\n左鞋 * 2\n手錶 * 4\n粉筆 * 3\n毛巾盤 * 2\n領巾 * 2\n右鞋 * 4\n襪子 * 3\n名牌 * 2\n水壺 * 4\n眼鏡 * 2\n左鞋 * 5\n毛巾 * 2\n名牌 * 3\n水壺 * 3`,
             2: `眼鏡 * 2\n水壺 * 2\n左鞋 * 3\n手錶 * 1\n粉筆 * 1\n毛巾盤 * 3\n領巾 * 1\n右鞋 * 3\n襪子 * 4\n名牌 * 3\n左腳 * 1\n右手 * 2\n輔導員 * 1\n學員 * 2\n右腳 * 1\n左手 * 1`,
@@ -467,10 +467,11 @@
             generateTabs();
         }
 
-        // 🛠️ 徹底清除所有自訂物資，回復官方預設 7 回合經典配置
+        // 🛠️ 回復初始設定：清除暫存並重新帶入 1~7 回合經典物資 (非空白)
         function resetToDefaultSettings() {
-            if (confirm("⚠️ 確定要清除所有修改，並回復至系統預設的 7 回合經典物資配置嗎？(此操作不可還原)")) {
-                // 1. 清空 Local Storage 所有自動存檔 key (包括所有自訂物資資料)
+            if (confirm("⚠️ 確定要回復至系統最初預設的 7 回合經典物資配置嗎？\n(這會覆蓋掉你目前所做的修改)")) {
+                
+                // 1. 清除相關緩存
                 for (let i = localStorage.length - 1; i >= 0; i--) {
                     const key = localStorage.key(i);
                     if (key && key.startsWith('autosave_')) {
@@ -478,21 +479,24 @@
                     }
                 }
                 
-                // 2. 還原輸入框預設值
+                // 2. 還原頂部設定框
                 totalRoundsInput.value = "7";
                 secondsInput.value = "5";
                 timerLimitInput.value = "120";
-
-                // 3. 儲存初始設定
                 autoSaveSettings();
-                
-                // 4. 重建 Tabs (此時因為 local cache 清空，會直接抓原始 originalPresetTexts 的 1~7 回合經典物資)
+
+                // 3. 重新建立頁籤，使其自動加載 originalPresetTexts
                 generateTabs();
+
+                // 4. 【關鍵修正】強制讓 1 ~ 7 回合「解析文字到下拉選單中」，確保資料完整對齊，非空狀態！
+                for (let r = 1; r <= 7; r++) {
+                    parseTextToDropdown(r);
+                }
                 
-                // 5. 直接執行「重新部署」使物資立即回到戰場
+                // 5. 重新生成當前第 1 回合的戰場格子
                 applySettingsAndReset();
                 
-                alert("✨ 已徹底還原至系統預設 7 回合初始物資戰場！");
+                alert("✨ 已成功還原並載入預設的 7 回合經典物資配置！");
             }
         }
 
@@ -793,6 +797,7 @@
             }
         }
 
+        // 結束該回合
         function handleEndRoundBtnClick() {
             clearInterval(autoFlipTimer);
             clearInterval(countdownTimer);
