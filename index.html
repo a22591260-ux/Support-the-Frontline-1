@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>閃動格子支援前線 - 回合制版</title>
+    <title>閃動格子支援前線 - 七回合預設版</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -323,7 +323,7 @@
         .card-back { background: linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%) !important; color: var(--primary-neon) !important; font-size: 36px; font-weight: 900; border: 2px solid #4c1d95; text-shadow: 0 0 8px var(--primary-neon); }
         .card-front { background-color: #ffffff !important; color: #0f172a !important; transform: rotateY(180deg); border: 3px solid var(--primary-neon); padding: 6px; text-align: center; overflow: hidden; }
 
-        .card-front .item-name { font-size: 24px; font-weight: 900; line-height: 1.1; word-break: break-all; max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-front .item-name { font-size: 20px; font-weight: 900; line-height: 1.1; word-break: break-all; max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .bomb-img { width: 70px; height: 70px; object-fit: contain; animation: bombShake 0.5s infinite alternate; }
         @keyframes bombShake { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
         .card-front .qty-tag { display: block; margin-top: 4px; color: #e67e22; font-size: 22px; font-weight: 900; line-height: 1; }
@@ -352,7 +352,8 @@
         <div class="setup-row">
             <div class="setup-item">
                 <span>🎯 總任務：</span>
-                <input type="number" id="totalRoundsInput" value="3" min="1" max="10" onchange="generateTabs(); saveConfigToStorage();"> 回合
+                <!-- 預設改為圖片中的 7 回合 -->
+                <input type="number" id="totalRoundsInput" value="7" min="1" max="10" onchange="generateTabs(); saveConfigToStorage();"> 回合
             </div>
             <div class="setup-item">
                 <span>⏱️ 閃動速度：</span>
@@ -397,16 +398,22 @@
     </div>
 
     <script>
-        let flippedCount = 0, currentRound = 1, maxRounds = 3, flipIntervalSeconds = 2;
+        let flippedCount = 0, currentRound = 1, maxRounds = 7, flipIntervalSeconds = 2;
         let autoFlipTimer = null, countdownTimer = null, timeLeft = 120, initialTimeLimit = 120, gameState = 'ready';
         const bombIconUrl = "https://img.icons8.com/emoji/96/bomb-emoji.png";
 
-        const availableItems = ["眼鏡", "水壺", "鞋子", "鑰匙", "手錶", "背包", "雨傘", "帽子", "手機", "耳機", "鉛筆", "書本", "杯子", "肥皂", "外套", "錢包", "炸彈", "（空）"];
+        // 更新全選項清單，包含圖片中所有的自訂品項與體能處罰
+        const availableItems = ["眼鏡", "水壺", "左鞋", "手錶", "粉筆", "毛巾盤", "領巾", "右鞋", "襪子", "名牌", "左腳", "右腳", "左手", "右手", "輔導員", "學員", "深蹲", "開合跳", "蛙跳", "伏地挺身", "炸彈", "（空）"];
 
+        // 🎯 依據你的表格圖片，完美移植 1 至 7 回合的預設題目資料
         const presetTexts = {
-            1: `眼鏡 * 2\n眼鏡 * 2\n水壺 * 4\n鞋子 * 3\n鑰匙 * 1\n手錶 * 5\n背包 * 2\n雨傘 * 3\n帽子 * 4\n手機 * 1\n耳機 * 5\n鉛筆 * 2\n書本 * 3\n杯子 * 4\n炸彈\n肥皂 * 1`,
-            2: `炸彈\n炸彈\n手機 * 2\n錢包 * 1\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）\n（空）`,
-            3: `（空）`
+            1: `眼鏡 * 1\n水壺 * 1\n左鞋 * 2\n手錶 * 4\n粉筆 * 3\n毛巾盤 * 2\n領巾 * 2\n右鞋 * 4\n襪子 * 3\n名牌 * 2\n水壺 * 4\n眼鏡 * 2\n左鞋 * 5\n毛巾 * 2\n名牌 * 3\n水壺 * 3`,
+            2: `眼鏡 * 2\n水壺 * 2\n左鞋 * 3\n手錶 * 1\n粉筆 * 1\n毛巾盤 * 3\n領巾 * 1\n右鞋 * 3\n襪子 * 4\n名牌 * 3\n左腳 * 1\n右手 * 2\n輔導員 * 1\n學員 * 2\n右腳 * 1\n左手 * 1`,
+            3: `眼鏡 * 2\n水壺 * 3\n左鞋 * 3\n手錶 * 2\n粉筆 * 2\n毛巾盤 * 2\n領巾 * 3\n炸彈\n炸彈\n名牌 * 4\n炸彈\n左手 * 3\n炸彈\n學員 * 1\n右腳 * 2\n炸彈`,
+            4: `眼鏡 * 1\n水壺 * 4\n炸彈\n手錶 * 3\n粉筆 * 3\n毛巾 * 1\n炸彈\n右鞋 * 6\n襪子 * 2\n名牌 * 5\n左腳 * 2\n炸彈\n輔導員 * 1\n炸彈\n炸彈\n右手 * 1`,
+            5: `眼鏡 * 4\n水壺 * 7\n左鞋 * 7\n手錶 * 4\n粉筆 * 4\n毛巾盤 * 1\n深蹲 * 10\n炸彈\n炸彈\n名牌 * 10\n炸彈\n右手 * 4\n炸彈\n開合跳 * 20\n右腳 * 4\n炸彈`,
+            6: `炸彈\n炸彈\n左鞋 * 8\n炸彈\n粉筆 * 2\n毛巾 * 3\n炸彈\n右鞋 * 5\n襪子 * 7\n名牌 * 9\n左腳 * 3\n右手 * 4\n蛙跳 * 20\n學員 * 3\n開合跳 * 20\n深蹲 * 10`,
+            7: `眼鏡 * 3\n水壺 * 6\n左鞋 * 6\n手錶 * 3\n粉筆 * 2\n毛巾盤 * 2\n領巾 * 3\n右鞋 * 3\n襪子 * 5\n名牌 * 10\n左腳 * 4\n右手 * 7\n蛙跳 * 20\n伏地挺身 * 10\n開合跳 * 20\n深蹲 * 10`
         };
 
         const board = document.getElementById('board'), flippedCountDisplay = document.getElementById('flippedCount');
@@ -450,7 +457,7 @@
         function toggleImportArea() { importArea.style.display = (importArea.style.display === 'block') ? 'none' : 'block'; }
 
         function generateTabs() {
-            let rounds = parseInt(totalRoundsInput.value) || 3;
+            let rounds = parseInt(totalRoundsInput.value) || 7;
             if (rounds < 1) rounds = 1; if (rounds > 10) rounds = 10;
             totalRoundsInput.value = rounds;
 
@@ -489,6 +496,8 @@
                     textarea.value = storedTxt;
                 } else if(presetTexts[r]) {
                     textarea.value = presetTexts[r];
+                } else {
+                    textarea.value = "（空）";
                 }
                 
                 textarea.oninput = (function(roundIdx) { return function() { saveRoundDataToStorage(roundIdx); } })(r);
@@ -614,7 +623,7 @@
 
         function applySettingsAndReset() {
             document.body.classList.remove('panic-mode');
-            maxRounds = parseInt(totalRoundsInput.value) || 3;
+            maxRounds = parseInt(totalRoundsInput.value) || 7;
             flipIntervalSeconds = parseInt(secondsInput.value) || 2;
             initialTimeLimit = parseInt(timerLimitInput.value) || 120;
             timeLeft = initialTimeLimit;
@@ -654,7 +663,12 @@
                 } else if (item.name === "（空）") {
                     contentHtml = `<div class="card-face card-front"><span class="item-name" style="color:#94a3b8 !important;">無物資</span></div>`;
                 } else {
-                    contentHtml = `<div class="card-face card-front"><span class="item-name">${item.name}</span><span class="qty-tag">* ${item.qty}</span></div>`;
+                    // 若項目包含體能項目(深蹲, 開合跳, 蛙跳, 伏地挺身)則隱藏單純的乘號標籤，改用更顯眼的顯示
+                    if (["深蹲", "開合跳", "蛙跳", "伏地挺身"].includes(item.name)) {
+                        contentHtml = `<div class="card-face card-front" style="background:#fff3cd !important;"><span class="item-name" style="color:#856404 !important;">${item.name}</span><span class="qty-tag" style="color:#856404 !important;">${item.qty} 次</span></div>`;
+                    } else {
+                        contentHtml = `<div class="card-face card-front"><span class="item-name">${item.name}</span><span class="qty-tag">* ${item.qty}</span></div>`;
+                    }
                 }
                 card.innerHTML = `<div class="card-face card-back">?</div>${contentHtml}`;
                 card.addEventListener('click', function() { if (gameState === 'playing' && !this.classList.contains('flipped')) exposeCard(this, false); });
@@ -733,7 +747,6 @@
             }
         }
 
-        // ⏳ 啟動倒數計時器（💡 修改：時間到只結束該回合，不結束整場遊戲）
         function startCountdownTimer() {
             if (countdownTimer) clearInterval(countdownTimer);
             countdownTimer = setInterval(function() {
@@ -744,13 +757,11 @@
                     clearInterval(autoFlipTimer);
                     document.body.classList.remove('panic-mode');
                     
-                    // 轉為「回合結束」狀態，讓玩家可以按下一關
                     gameState = 'round_end';
                     statusHint.innerText = `⏰ 第 ${currentRound} 回合時間到！本回合強制截止。`;
                     
                     mainGameBtn.disabled = false;
                     mainGameBtn.className = "btn btn-main btn-next";
-                    // 根據是否還有下一關決定按鈕文字
                     mainGameBtn.innerText = currentRound < maxRounds ? "⏭️ NEXT ROUND" : "🏆 GAME OVER";
                     
                     pauseGameBtn.style.display = "none";
