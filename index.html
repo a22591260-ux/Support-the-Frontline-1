@@ -362,7 +362,8 @@
             </div>
             <div class="setup-item">
                 <span>⏱️ 閃動速度：</span>
-                <input type="number" id="secondsInput" value="2" min="1" max="60" onchange="autoSaveSettings()"> 秒/次
+                <!-- 🛠️ 預設值調整為 5 秒 -->
+                <input type="number" id="secondsInput" value="5" min="1" max="60" onchange="autoSaveSettings()"> 秒/次
             </div>
             <div class="setup-item">
                 <span>⏳ 當前回合預設時限：</span>
@@ -409,7 +410,8 @@
     </div>
 
     <script>
-        let flippedCount = 0, currentRound = 1, maxRounds = 7, flipIntervalSeconds = 2;
+        // 🛠️ 閃動初始變數調整為 5 秒
+        let flippedCount = 0, currentRound = 1, maxRounds = 7, flipIntervalSeconds = 5;
         let autoFlipTimer = null, countdownTimer = null, timeLeft = 120, initialTimeLimit = 120, gameState = 'ready';
         const bombIconUrl = "https://img.icons8.com/emoji/96/bomb-emoji.png";
 
@@ -481,9 +483,9 @@
                     }
                 }
                 
-                // 還原輸入框預設值
+                // 還原輸入框預設值 (此處亦修正為預設 5 秒)
                 totalRoundsInput.value = "7";
-                secondsInput.value = "2";
+                secondsInput.value = "5";
                 timerLimitInput.value = "120";
 
                 // 自動儲存初始設定
@@ -700,9 +702,8 @@
         function applySettingsAndReset() {
             document.body.classList.remove('panic-mode');
             maxRounds = parseInt(totalRoundsInput.value) || 7;
-            flipIntervalSeconds = parseInt(secondsInput.value) || 2;
+            flipIntervalSeconds = parseInt(secondsInput.value) || 5; // 🛠️ 讀取新的秒數
             
-            // 【修正關鍵】：直接讀取你手動輸入的「當前回合預設時限」框數值，不再被 120/300 判定覆蓋
             initialTimeLimit = parseInt(timerLimitInput.value) || 120; 
             timeLeft = initialTimeLimit;
             
@@ -716,7 +717,6 @@
             if (countdownTimer) clearInterval(countdownTimer);
             document.body.classList.remove('panic-mode');
             
-            // 【修正關鍵】：初始化回合時，優先讀取文字框中當前設定的值
             initialTimeLimit = parseInt(timerLimitInput.value) || 120;
             timeLeft = initialTimeLimit; 
             updateTimerDisplay();
