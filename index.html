@@ -435,11 +435,6 @@
         const endRoundBtn = document.getElementById('endRoundBtn'); 
         const tabHeaders = document.getElementById('tabHeaders'), tabContents = document.getElementById('tabContents');
 
-        // 回合時限自動設定
-        function getRoundTimeLimit(round) {
-            return round <= 4 ? 120 : 300; // 1-4回合: 2分鐘，5-7回合: 5分鐘
-        }
-
         // ==========================================
         // 💾 自動存檔與回復預設邏輯
         // ==========================================
@@ -701,16 +696,17 @@
             }
         }
 
+        // 重新部署
         function applySettingsAndReset() {
             document.body.classList.remove('panic-mode');
             maxRounds = parseInt(totalRoundsInput.value) || 7;
             flipIntervalSeconds = parseInt(secondsInput.value) || 2;
             
-            currentRound = 1; 
-            initialTimeLimit = getRoundTimeLimit(currentRound);
-            timerLimitInput.value = initialTimeLimit;
+            // 【修正關鍵】：直接讀取你手動輸入的「當前回合預設時限」框數值，不再被 120/300 判定覆蓋
+            initialTimeLimit = parseInt(timerLimitInput.value) || 120; 
             timeLeft = initialTimeLimit;
             
+            currentRound = 1; 
             importArea.style.display = 'none';
             initRoundBoard();
         }
@@ -720,8 +716,8 @@
             if (countdownTimer) clearInterval(countdownTimer);
             document.body.classList.remove('panic-mode');
             
-            initialTimeLimit = getRoundTimeLimit(currentRound);
-            timerLimitInput.value = initialTimeLimit;
+            // 【修正關鍵】：初始化回合時，優先讀取文字框中當前設定的值
+            initialTimeLimit = parseInt(timerLimitInput.value) || 120;
             timeLeft = initialTimeLimit; 
             updateTimerDisplay();
 
@@ -730,7 +726,9 @@
             endRoundBtn.style.display = "none"; 
             
             let roundMins = Math.floor(initialTimeLimit / 60);
-            statusHint.innerText = `第 ${currentRound} 回合戰略配置就緒！（本回合時限：${roundMins} 分鐘）`;
+            let roundSecs = initialTimeLimit % 60;
+            let timeString = roundSecs > 0 ? `${roundMins} 分 ${roundSecs} 秒` : `${roundMins} 分鐘`;
+            statusHint.innerText = `第 ${currentRound} 回合戰略配置就緒！（本回合時限：${timeString}）`;
             
             board.innerHTML = ''; flippedCount = 0; flippedCountDisplay.innerText = flippedCount;
             currentRoundDisplay.innerText = currentRound; totalRoundsDisplay.innerText = maxRounds;
