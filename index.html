@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>閃動格子支援前線 - 時間至上版</title>
+    <title>閃動格子支援前線 - 回合制版</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -677,6 +677,7 @@
                 } else {
                     gameState = 'game_over';
                     statusHint.innerText = "🏆 總任務全數結束！可重新部署新戰場。";
+                    mainGameBtn.className = "btn btn-main btn-start";
                     mainGameBtn.innerText = "🔄 重新開始遊戲";
                 }
             } else if (gameState === 'game_over') {
@@ -693,7 +694,6 @@
                 gameState = 'playing';
                 pauseGameBtn.innerText = "⏸️ PAUSE"; statusHint.innerText = `⏱️ 戰場干擾中！每 ${flipIntervalSeconds} 秒隨機解鎖一個項目！`;
                 startCountdownTimer();
-                // 恢復時同樣檢查是否還有牌要補計時器
                 const unexposedCards = document.querySelectorAll('.card:not(.flipped)');
                 if (unexposedCards.length > 0) {
                     autoFlipTimer = setInterval(pickAndExposeRandomCard, flipIntervalSeconds * 1000);
@@ -701,7 +701,6 @@
             }
         }
 
-        // 🆕 玩家按下【結束該回合】按鈕的處理邏輯
         function handleEndRoundBtnClick() {
             clearInterval(autoFlipTimer);
             clearInterval(countdownTimer);
@@ -718,20 +717,14 @@
             endRoundBtn.style.display = "none";
         }
 
-        // ⏱️ 啟動自動翻牌（修改：第一張不要等待，立刻執行）
         function startAutoFlipTimer() {
             if (autoFlipTimer) clearInterval(autoFlipTimer);
-            
-            // 💡 核心變更：第一張牌直接執行翻開，不等待
             pickAndExposeRandomCard();
-
-            // 第二張開始才依照設定的秒數循環觸發
             autoFlipTimer = setInterval(function() {
                 pickAndExposeRandomCard();
             }, flipIntervalSeconds * 1000);
         }
 
-        // 獨立出一個隨機挑選並翻牌的處理器
         function pickAndExposeRandomCard() {
             const unexposedCards = Array.from(document.querySelectorAll('.card:not(.flipped)'));
             if (unexposedCards.length > 0) {
@@ -740,7 +733,7 @@
             }
         }
 
-        // ⏳ 啟動倒數計時器
+        // ⏳ 啟動倒數計時器（💡 修改：時間到只結束該回合，不結束整場遊戲）
         function startCountdownTimer() {
             if (countdownTimer) clearInterval(countdownTimer);
             countdownTimer = setInterval(function() {
@@ -749,18 +742,23 @@
                 if (timeLeft <= 0) {
                     clearInterval(countdownTimer);
                     clearInterval(autoFlipTimer);
-                    gameState = 'time_out';
-                    statusHint.innerText = "💥 時間到！任務失敗！";
+                    document.body.classList.remove('panic-mode');
+                    
+                    // 轉為「回合結束」狀態，讓玩家可以按下一關
+                    gameState = 'round_end';
+                    statusHint.innerText = `⏰ 第 ${currentRound} 回合時間到！本回合強制截止。`;
+                    
                     mainGameBtn.disabled = false;
                     mainGameBtn.className = "btn btn-main btn-next";
-                    mainGameBtn.innerText = "🔄 重開挑戰";
+                    // 根據是否還有下一關決定按鈕文字
+                    mainGameBtn.innerText = currentRound < maxRounds ? "⏭️ NEXT ROUND" : "🏆 GAME OVER";
+                    
                     pauseGameBtn.style.display = "none";
                     endRoundBtn.style.display = "none";
                 }
             }, 1000);
         }
 
-        // 🃏 翻牌核心邏輯（修改：全翻完後保留時間倒數）
         function exposeCard(card, isAuto) {
             if (card.classList.contains('flipped')) return;
 
@@ -769,7 +767,6 @@
                 card.classList.add('auto-flipped');
             }
             
-            // 如果翻到炸彈，觸發爆炸樣式
             if (card.dataset.isBomb === "true") {
                 card.classList.add('bomb-exploded');
             }
@@ -777,17 +774,12 @@
             flippedCount++;
             flippedCountDisplay.innerText = flippedCount;
 
-            // 💡 關鍵變更點：當 16 張卡片全部翻完
             if (flippedCount === 16) {
-                clearInterval(autoFlipTimer); // 🛑 停止自動翻牌（因為已經沒牌可以翻，關閉避免系統拋錯）
-                
-                // ⚠️ 注意：這裡【完全不清除】 countdownTimer。
-                // 時間會繼續在畫面上滴答倒數，逼玩家必須手動按下「結束該回合」！
+                clearInterval(autoFlipTimer); 
                 statusHint.innerText = "🚨 物資全數翻開！時間仍在倒數，請火速點擊左側【結束該回合】結算！";
             }
         }
 
-        // 視窗載入初始化
         window.onload = function() {
             loadConfigFromStorage();
             generateTabs();
