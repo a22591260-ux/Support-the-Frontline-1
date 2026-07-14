@@ -467,9 +467,9 @@
             generateTabs();
         }
 
-        // 🛠️ 回復初始設定：清除暫存並重新帶入 1~7 回合經典物資 (非空白)
+        // 🛠️ 回復初始設定
         function resetToDefaultSettings() {
-            if (confirm("⚠️ 確定要回復至系統最初預設的 7 回合經典物資配置嗎？\n(這會覆蓋掉你目前所做的修改)")) {
+            if (confirm("⚠️ 確定要回復至系統最初預設的 7 回合經典配置嗎？\n(這會覆蓋掉你目前所做的修改)")) {
                 
                 // 1. 清除相關緩存
                 for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -479,16 +479,16 @@
                     }
                 }
                 
-                // 2. 還原頂部設定框
+                // 2. 還原設定框
                 totalRoundsInput.value = "7";
                 secondsInput.value = "5";
-                timerLimitInput.value = "120";
+                timerLimitInput.value = "120"; // 預設帶入 120 秒（第 1 回合）
                 autoSaveSettings();
 
                 // 3. 重新建立頁籤，使其自動加載 originalPresetTexts
                 generateTabs();
 
-                // 4. 【關鍵修正】強制讓 1 ~ 7 回合「解析文字到下拉選單中」，確保資料完整對齊，非空狀態！
+                // 4. 強制讓 1 ~ 7 回合「解析文字到下拉選單中」
                 for (let r = 1; r <= 7; r++) {
                     parseTextToDropdown(r);
                 }
@@ -496,7 +496,7 @@
                 // 5. 重新生成當前第 1 回合的戰場格子
                 applySettingsAndReset();
                 
-                alert("✨ 已成功還原並載入預設的 7 回合經典物資配置！");
+                alert("✨ 已成功還原並載入預設配置！\n(第 1~4 回合預設為 2 分鐘，第 5~7 回合預設為 5 分鐘)");
             }
         }
 
@@ -699,7 +699,9 @@
             maxRounds = parseInt(totalRoundsInput.value) || 7;
             flipIntervalSeconds = parseInt(secondsInput.value) || 5; 
             
-            initialTimeLimit = parseInt(timerLimitInput.value) || 120; 
+            // 根據當前回合自動取得預設時限
+            initialTimeLimit = getRoundPresetTime(1); 
+            timerLimitInput.value = initialTimeLimit; // 同步到上方設定框
             timeLeft = initialTimeLimit;
             
             currentRound = 1; 
@@ -707,12 +709,21 @@
             initRoundBoard();
         }
 
+        // 🌟 新增邏輯：取得各回合預設時限
+        // 第 1 ~ 4 回合為 120 秒 (2分)
+        // 第 5 ~ 7 回合 (含以上) 為 300 秒 (5分)
+        function getRoundPresetTime(roundNumber) {
+            return roundNumber <= 4 ? 120 : 300;
+        }
+
         function initRoundBoard() {
             if (autoFlipTimer) clearInterval(autoFlipTimer);
             if (countdownTimer) clearInterval(countdownTimer);
             document.body.classList.remove('panic-mode');
             
-            initialTimeLimit = parseInt(timerLimitInput.value) || 120;
+            // 進入下一回合時，動態讀取該回合應有的預設時限
+            initialTimeLimit = getRoundPresetTime(currentRound);
+            timerLimitInput.value = initialTimeLimit; // 同步上方顯示值
             timeLeft = initialTimeLimit; 
             updateTimerDisplay();
 
