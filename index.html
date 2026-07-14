@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>閃動格子支援前線 - 七回合完美校正版 (動態時間版)</title>
+    <title>閃動格子支援前線 - 自動存檔與回復版</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -330,6 +330,12 @@
 
         .btn { padding: 8px 18px; font-size: 14px; background-color: #334155; color: white; border: 1px solid #475569; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn:hover { background-color: #475569; border-color: #94a3b8; }
+        
+        /* 💾 自動存檔提示與重設按鈕樣式 */
+        .auto-save-badge { font-size: 12px; color: var(--success-neon); display: flex; align-items: center; gap: 4px; font-weight: bold; }
+        .btn-reset { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; box-shadow: 0 0 10px rgba(231, 76, 60, 0.4); }
+        .btn-reset:hover { box-shadow: 0 0 20px rgba(231, 76, 60, 0.7); transform: translateY(-1px); }
+
         .btn-main { font-size: 18px; padding: 14px 20px; font-weight: 800; border-radius: 10px; width: 100%; box-sizing: border-box; border: none; text-transform: uppercase; }
         
         .btn-start { background: linear-gradient(135deg, #00ff87 0%, #60efff 100%); color: #0f172a; box-shadow: 0 4px 15px rgba(0, 255, 135, 0.4); }
@@ -352,16 +358,15 @@
         <div class="setup-row">
             <div class="setup-item">
                 <span>🎯 總任務：</span>
-                <input type="number" id="totalRoundsInput" value="7" min="1" max="10" onchange="generateTabs(); saveConfigToStorage();"> 回合
+                <input type="number" id="totalRoundsInput" value="7" min="1" max="10" onchange="handleTotalRoundsChange()"> 回合
             </div>
             <div class="setup-item">
                 <span>⏱️ 閃動速度：</span>
-                <input type="number" id="secondsInput" value="2" min="1" max="60" onchange="saveConfigToStorage()"> 秒/次
+                <input type="number" id="secondsInput" value="2" min="1" max="60" onchange="autoSaveSettings()"> 秒/次
             </div>
             <div class="setup-item">
                 <span>⏳ 當前回合預設時限：</span>
-                <!-- 改為可調整輸入，但會根據回合數動態更新預設值 -->
-                <input type="number" id="timerLimitInput" value="120" min="5" max="600" onchange="saveConfigToStorage()"> 秒
+                <input type="number" id="timerLimitInput" value="120" min="5" max="600" onchange="autoSaveSettings()"> 秒
             </div>
             <button class="btn" onclick="toggleImportArea()">🛠️ 配置戰略物資</button>
         </div>
@@ -371,8 +376,14 @@
             <div id="tabContents"></div>
         </div>
         
-        <div style="text-align: right; margin-top: 10px;">
-            <button class="btn" style="background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color:#0f172a; border:none;" onclick="applySettingsAndReset()">⚡ 重新部署新戰場</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+            <div class="auto-save-badge">
+                <span>🟢 系統已啟用即時自動存檔</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-reset" onclick="resetToDefaultSettings()">⚠️ 回復初始設定</button>
+                <button class="btn" style="background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color:#0f172a; border:none;" onclick="applySettingsAndReset()">⚡ 重新部署新戰場</button>
+            </div>
         </div>
     </div>
 
@@ -404,8 +415,8 @@
 
         const availableItems = ["眼鏡", "水壺", "左鞋", "手錶", "粉筆", "毛巾盤", "領巾", "右鞋", "襪子", "名牌", "左腳", "右腳", "左手", "右手", "輔導員", "學員", "毛巾", "深蹲", "開合跳", "蛙跳", "伏地挺身", "炸彈", "（空）"];
 
-        // 預設資料 (1~7 回合校正)
-        const presetTexts = {
+        // 系統最原始預設配置（唯讀備份）
+        const originalPresetTexts = {
             1: `眼鏡 * 1\n水壺 * 1\n左鞋 * 2\n手錶 * 4\n粉筆 * 3\n毛巾盤 * 2\n領巾 * 2\n右鞋 * 4\n襪子 * 3\n名牌 * 2\n水壺 * 4\n眼鏡 * 2\n左鞋 * 5\n毛巾 * 2\n名牌 * 3\n水壺 * 3`,
             2: `眼鏡 * 2\n水壺 * 2\n左鞋 * 3\n手錶 * 1\n粉筆 * 1\n毛巾盤 * 3\n領巾 * 1\n右鞋 * 3\n襪子 * 4\n名牌 * 3\n左腳 * 1\n右手 * 2\n輔導員 * 1\n學員 * 2\n右腳 * 1\n左手 * 1`,
             3: `眼鏡 * 2\n水壺 * 3\n左鞋 * 3\n手錶 * 2\n粉筆 * 2\n毛巾盤 * 2\n領巾 * 3\n炸彈\n炸彈\n名牌 * 4\n炸彈\n左手 * 3\n炸彈\n學員 * 1\n右腳 * 2\n炸彈`,
@@ -424,24 +435,26 @@
         const endRoundBtn = document.getElementById('endRoundBtn'); 
         const tabHeaders = document.getElementById('tabHeaders'), tabContents = document.getElementById('tabContents');
 
-        // 🌟 新增：根據回合數自動取得預設時間的函數
+        // 回合時限自動設定
         function getRoundTimeLimit(round) {
-            if (round <= 4) {
-                return 120; // 前面 4 回合：2 分鐘 (120 秒)
-            } else {
-                return 300; // 後面 3 回合 (第 5-7 回合或更後)：5 分鐘 (300 秒)
-            }
+            return round <= 4 ? 120 : 300; // 1-4回合: 2分鐘，5-7回合: 5分鐘
         }
 
-        function saveConfigToStorage() {
-            localStorage.setItem('game_totalRounds', totalRoundsInput.value);
-            localStorage.setItem('game_seconds', secondsInput.value);
-            localStorage.setItem('game_timerLimit', timerLimitInput.value);
+        // ==========================================
+        // 💾 自動存檔與回復預設邏輯
+        // ==========================================
+
+        // 1. 自動儲存頂部設定
+        function autoSaveSettings() {
+            localStorage.setItem('autosave_totalRounds', totalRoundsInput.value);
+            localStorage.setItem('autosave_seconds', secondsInput.value);
+            localStorage.setItem('autosave_timerLimit', timerLimitInput.value);
         }
 
-        function saveRoundDataToStorage(roundIndex) {
+        // 2. 自動儲存特定回合的文字與下拉配置
+        function autoSaveRoundData(roundIndex) {
             let txtValue = document.getElementById(`txt-paste-${roundIndex}`)?.value || '';
-            localStorage.setItem(`game_txt_round_${roundIndex}`, txtValue);
+            localStorage.setItem(`autosave_txt_round_${roundIndex}`, txtValue);
 
             let dropdowns = [];
             for(let i = 0; i < 16; i++) {
@@ -452,15 +465,53 @@
                 }
             }
             if(dropdowns.length > 0) {
-                localStorage.setItem(`game_drop_round_${roundIndex}`, JSON.stringify(dropdowns));
+                localStorage.setItem(`autosave_drop_round_${roundIndex}`, JSON.stringify(dropdowns));
             }
         }
 
-        function loadConfigFromStorage() {
-            if(localStorage.getItem('game_totalRounds')) totalRoundsInput.value = localStorage.getItem('game_totalRounds');
-            if(localStorage.getItem('game_seconds')) secondsInput.value = localStorage.getItem('game_seconds');
-            // 回合時限現在會動態綁定回合，故不強制載入單一存檔
+        // 3. 變更總回合數時，儲存設定並重新繪製 Tabs
+        function handleTotalRoundsChange() {
+            autoSaveSettings();
+            generateTabs();
         }
+
+        // 4. 回復初始設定（一鍵清空自訂，重新載入最原始版本）
+        function resetToDefaultSettings() {
+            if (confirm("⚠️ 確定要清除所有修改，並回復至系統預設值嗎？(不可還原)")) {
+                // 清空 Local Storage 內的所有自動存檔 key
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('autosave_')) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                
+                // 還原輸入框預設值
+                totalRoundsInput.value = "7";
+                secondsInput.value = "2";
+                timerLimitInput.value = "120";
+
+                // 自動儲存初始設定
+                autoSaveSettings();
+                
+                // 重新載入與重置
+                generateTabs();
+                applySettingsAndReset();
+                
+                alert("✨ 已成功回復至初始原廠設定！");
+            }
+        }
+
+        // 5. 初始化網頁時載入暫存
+        function loadSettingsFromAutoSave() {
+            if(localStorage.getItem('autosave_totalRounds')) totalRoundsInput.value = localStorage.getItem('autosave_totalRounds');
+            if(localStorage.getItem('autosave_seconds')) secondsInput.value = localStorage.getItem('autosave_seconds');
+            if(localStorage.getItem('autosave_timerLimit')) timerLimitInput.value = localStorage.getItem('autosave_timerLimit');
+        }
+
+        // ==========================================
+        // 顯示介面與選單操作
+        // ==========================================
 
         function toggleImportArea() { importArea.style.display = (importArea.style.display === 'block') ? 'none' : 'block'; }
 
@@ -499,28 +550,38 @@
                 textarea.id = `txt-paste-${r}`;
                 textarea.placeholder = `【文字複製貼上區】\n請直接在此貼上 Excel 或文字清單\n格式如：眼鏡 * 2`;
                 
-                let storedTxt = localStorage.getItem(`game_txt_round_${r}`);
+                // 優先讀取自動存檔，若無，則載入預設配置
+                let storedTxt = localStorage.getItem(`autosave_txt_round_${r}`);
                 if (storedTxt !== null) {
                     textarea.value = storedTxt;
-                } else if(presetTexts[r]) {
-                    textarea.value = presetTexts[r];
+                } else if(originalPresetTexts[r]) {
+                    textarea.value = originalPresetTexts[r];
                 } else {
                     textarea.value = "（空）";
                 }
                 
-                textarea.oninput = (function(roundIdx) { return function() { saveRoundDataToStorage(roundIdx); } })(r);
+                // 文字一改變就即時自動存檔
+                textarea.oninput = (function(roundIdx) { 
+                    return function() { 
+                        autoSaveRoundData(roundIdx); 
+                    } 
+                })(r);
 
                 let parseBtn = document.createElement('button');
                 parseBtn.type = "button"; parseBtn.className = "btn"; parseBtn.style.width = "100%";
                 parseBtn.innerText = "📋 解析並帶入右側下拉單";
-                parseBtn.onclick = (function(roundIdx) { return function() { parseTextToDropdown(roundIdx); }; })(r);
+                parseBtn.onclick = (function(roundIdx) { 
+                    return function() { 
+                        parseTextToDropdown(roundIdx); 
+                    }; 
+                })(r);
 
                 pasteZone.appendChild(textarea); pasteZone.appendChild(parseBtn);
 
                 let gridContainer = document.createElement('div');
                 gridContainer.className = 'dropdown-grid-container';
 
-                let storedDrop = localStorage.getItem(`game_drop_round_${r}`);
+                let storedDrop = localStorage.getItem(`autosave_drop_round_${r}`);
                 let parsedDrop = storedDrop ? JSON.parse(storedDrop) : null;
 
                 for (let i = 0; i < 16; i++) {
@@ -533,14 +594,19 @@
                     let selectQty = document.createElement('select'); selectQty.className = 'select-qty'; selectQty.id = `sel-qty-${r}-${i}`;
                     for(let q = 1; q <= 20; q++) { let o = document.createElement('option'); o.value = q; o.innerText = `${q} 個`; selectQty.appendChild(o); }
 
+                    // 下拉單改變時也自動存檔
                     selectItem.onchange = (function(roundIdx) {
                         return function() { 
                             selectQty.style.visibility = (this.value === "炸彈" || this.value === "（空）") ? "hidden" : "visible";
-                            saveRoundDataToStorage(roundIdx);
+                            autoSaveRoundData(roundIdx);
                         };
                     })(r);
                     
-                    selectQty.onchange = (function(roundIdx) { return function() { saveRoundDataToStorage(roundIdx); }; })(r);
+                    selectQty.onchange = (function(roundIdx) { 
+                        return function() { 
+                            autoSaveRoundData(roundIdx); 
+                        }; 
+                    })(r);
 
                     if (parsedDrop && parsedDrop[i]) {
                         if (!availableItems.includes(parsedDrop[i].name)) {
@@ -562,7 +628,7 @@
                 flexLayout.appendChild(pasteZone); flexLayout.appendChild(gridContainer);
                 panel.appendChild(flexLayout); tabContents.appendChild(panel);
 
-                if (!storedDrop && presetTexts[r] && (!backupDropdowns[r] || backupDropdowns[r].length === 0)) {
+                if (!storedDrop && originalPresetTexts[r] && (!backupDropdowns[r] || backupDropdowns[r].length === 0)) {
                     parseTextToDropdown(r);
                 }
             }
@@ -600,6 +666,8 @@
                     selItem.onchange();
                 }
             }
+            // 解析後自動存檔
+            autoSaveRoundData(roundIndex);
         }
 
         function switchTab(targetIndex) {
@@ -612,6 +680,10 @@
                 }
             }
         }
+
+        // ==========================================
+        // 核心遊戲引擎邏輯
+        // ==========================================
 
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array;
@@ -635,7 +707,6 @@
             flipIntervalSeconds = parseInt(secondsInput.value) || 2;
             
             currentRound = 1; 
-            // 🌟 重新部署時，直接根據第一回合更新時間
             initialTimeLimit = getRoundTimeLimit(currentRound);
             timerLimitInput.value = initialTimeLimit;
             timeLeft = initialTimeLimit;
@@ -649,7 +720,6 @@
             if (countdownTimer) clearInterval(countdownTimer);
             document.body.classList.remove('panic-mode');
             
-            // 🌟 初始化回合時，動態更新該回合預設時間
             initialTimeLimit = getRoundTimeLimit(currentRound);
             timerLimitInput.value = initialTimeLimit;
             timeLeft = initialTimeLimit; 
@@ -659,7 +729,6 @@
             pauseGameBtn.style.display = "none"; pauseGameBtn.innerText = "⏸️ PAUSE";
             endRoundBtn.style.display = "none"; 
             
-            // 顯示當前回合時限提示
             let roundMins = Math.floor(initialTimeLimit / 60);
             statusHint.innerText = `第 ${currentRound} 回合戰略配置就緒！（本回合時限：${roundMins} 分鐘）`;
             
@@ -812,8 +881,7 @@
         }
 
         window.onload = function() {
-            localStorage.clear();
-            loadConfigFromStorage();
+            loadSettingsFromAutoSave();
             generateTabs();
             applySettingsAndReset();
         };
