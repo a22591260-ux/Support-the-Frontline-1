@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>閃動格子支援前線 - 七回合預設版</title>
+    <title>閃動格子支援前線 - 七回合完美校正版</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -323,7 +323,7 @@
         .card-back { background: linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%) !important; color: var(--primary-neon) !important; font-size: 36px; font-weight: 900; border: 2px solid #4c1d95; text-shadow: 0 0 8px var(--primary-neon); }
         .card-front { background-color: #ffffff !important; color: #0f172a !important; transform: rotateY(180deg); border: 3px solid var(--primary-neon); padding: 6px; text-align: center; overflow: hidden; }
 
-        .card-front .item-name { font-size: 20px; font-weight: 900; line-height: 1.1; word-break: break-all; max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-front .item-name { font-size: 19px; font-weight: 900; line-height: 1.1; word-break: break-all; max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .bomb-img { width: 70px; height: 70px; object-fit: contain; animation: bombShake 0.5s infinite alternate; }
         @keyframes bombShake { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
         .card-front .qty-tag { display: block; margin-top: 4px; color: #e67e22; font-size: 22px; font-weight: 900; line-height: 1; }
@@ -352,7 +352,6 @@
         <div class="setup-row">
             <div class="setup-item">
                 <span>🎯 總任務：</span>
-                <!-- 預設改為圖片中的 7 回合 -->
                 <input type="number" id="totalRoundsInput" value="7" min="1" max="10" onchange="generateTabs(); saveConfigToStorage();"> 回合
             </div>
             <div class="setup-item">
@@ -402,10 +401,10 @@
         let autoFlipTimer = null, countdownTimer = null, timeLeft = 120, initialTimeLimit = 120, gameState = 'ready';
         const bombIconUrl = "https://img.icons8.com/emoji/96/bomb-emoji.png";
 
-        // 更新全選項清單，包含圖片中所有的自訂品項與體能處罰
-        const availableItems = ["眼鏡", "水壺", "左鞋", "手錶", "粉筆", "毛巾盤", "領巾", "右鞋", "襪子", "名牌", "左腳", "右腳", "左手", "右手", "輔導員", "學員", "深蹲", "開合跳", "蛙跳", "伏地挺身", "炸彈", "（空）"];
+        // 更新全選項清單，包含表格中出現的專有名詞
+        const availableItems = ["眼鏡", "水壺", "左鞋", "手錶", "粉筆", "毛巾盤", "領巾", "右鞋", "襪子", "名牌", "左腳", "右腳", "左手", "右手", "輔導員", "學員", "毛巾", "深蹲", "開合跳", "蛙跳", "伏地挺身", "炸彈", "（空）"];
 
-        // 🎯 依據你的表格圖片，完美移植 1 至 7 回合的預設題目資料
+        // 🎯 表格資料 100% 精準對照移植
         const presetTexts = {
             1: `眼鏡 * 1\n水壺 * 1\n左鞋 * 2\n手錶 * 4\n粉筆 * 3\n毛巾盤 * 2\n領巾 * 2\n右鞋 * 4\n襪子 * 3\n名牌 * 2\n水壺 * 4\n眼鏡 * 2\n左鞋 * 5\n毛巾 * 2\n名牌 * 3\n水壺 * 3`,
             2: `眼鏡 * 2\n水壺 * 2\n左鞋 * 3\n手錶 * 1\n粉筆 * 1\n毛巾盤 * 3\n領巾 * 1\n右鞋 * 3\n襪子 * 4\n名牌 * 3\n左腳 * 1\n右手 * 2\n輔導員 * 1\n學員 * 2\n右腳 * 1\n左手 * 1`,
@@ -663,7 +662,6 @@
                 } else if (item.name === "（空）") {
                     contentHtml = `<div class="card-face card-front"><span class="item-name" style="color:#94a3b8 !important;">無物資</span></div>`;
                 } else {
-                    // 若項目包含體能項目(深蹲, 開合跳, 蛙跳, 伏地挺身)則隱藏單純的乘號標籤，改用更顯眼的顯示
                     if (["深蹲", "開合跳", "蛙跳", "伏地挺身"].includes(item.name)) {
                         contentHtml = `<div class="card-face card-front" style="background:#fff3cd !important;"><span class="item-name" style="color:#856404 !important;">${item.name}</span><span class="qty-tag" style="color:#856404 !important;">${item.qty} 次</span></div>`;
                     } else {
@@ -731,6 +729,7 @@
             endRoundBtn.style.display = "none";
         }
 
+        // 隨機抽取一張卡牌翻開
         function startAutoFlipTimer() {
             if (autoFlipTimer) clearInterval(autoFlipTimer);
             pickAndExposeRandomCard();
