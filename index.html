@@ -362,11 +362,10 @@
             </div>
             <div class="setup-item">
                 <span>⏱️ 閃動速度：</span>
-                <!-- 🛠️ 預設值調整為 5 秒 -->
                 <input type="number" id="secondsInput" value="5" min="1" max="60" onchange="autoSaveSettings()"> 秒/次
             </div>
             <div class="setup-item">
-                <span>⏳ 當前回合預設時限：</span>
+                <span>⏳ 當先前鋒預設時限：</span>
                 <input type="number" id="timerLimitInput" value="120" min="5" max="600" onchange="autoSaveSettings()"> 秒
             </div>
             <button class="btn" onclick="toggleImportArea()">🛠️ 配置戰略物資</button>
@@ -410,7 +409,6 @@
     </div>
 
     <script>
-        // 🛠️ 閃動初始變數調整為 5 秒
         let flippedCount = 0, currentRound = 1, maxRounds = 7, flipIntervalSeconds = 5;
         let autoFlipTimer = null, countdownTimer = null, timeLeft = 120, initialTimeLimit = 120, gameState = 'ready';
         const bombIconUrl = "https://img.icons8.com/emoji/96/bomb-emoji.png";
@@ -441,14 +439,12 @@
         // 💾 自動存檔與回復預設邏輯
         // ==========================================
 
-        // 1. 自動儲存頂部設定
         function autoSaveSettings() {
             localStorage.setItem('autosave_totalRounds', totalRoundsInput.value);
             localStorage.setItem('autosave_seconds', secondsInput.value);
             localStorage.setItem('autosave_timerLimit', timerLimitInput.value);
         }
 
-        // 2. 自動儲存特定回合的文字與下拉配置
         function autoSaveRoundData(roundIndex) {
             let txtValue = document.getElementById(`txt-paste-${roundIndex}`)?.value || '';
             localStorage.setItem(`autosave_txt_round_${roundIndex}`, txtValue);
@@ -466,16 +462,15 @@
             }
         }
 
-        // 3. 變更總回合數時，儲存設定並重新繪製 Tabs
         function handleTotalRoundsChange() {
             autoSaveSettings();
             generateTabs();
         }
 
-        // 4. 回復初始設定（一鍵清空自訂，重新載入最原始版本）
+        // 🛠️ 徹底清除所有自訂物資，回復官方預設 7 回合經典配置
         function resetToDefaultSettings() {
-            if (confirm("⚠️ 確定要清除所有修改，並回復至系統預設值嗎？(不可還原)")) {
-                // 清空 Local Storage 內的所有自動存檔 key
+            if (confirm("⚠️ 確定要清除所有修改，並回復至系統預設的 7 回合經典物資配置嗎？(此操作不可還原)")) {
+                // 1. 清空 Local Storage 所有自動存檔 key (包括所有自訂物資資料)
                 for (let i = localStorage.length - 1; i >= 0; i--) {
                     const key = localStorage.key(i);
                     if (key && key.startsWith('autosave_')) {
@@ -483,23 +478,24 @@
                     }
                 }
                 
-                // 還原輸入框預設值 (此處亦修正為預設 5 秒)
+                // 2. 還原輸入框預設值
                 totalRoundsInput.value = "7";
                 secondsInput.value = "5";
                 timerLimitInput.value = "120";
 
-                // 自動儲存初始設定
+                // 3. 儲存初始設定
                 autoSaveSettings();
                 
-                // 重新載入與重置
+                // 4. 重建 Tabs (此時因為 local cache 清空，會直接抓原始 originalPresetTexts 的 1~7 回合經典物資)
                 generateTabs();
+                
+                // 5. 直接執行「重新部署」使物資立即回到戰場
                 applySettingsAndReset();
                 
-                alert("✨ 已成功回復至初始原廠設定！");
+                alert("✨ 已徹底還原至系統預設 7 回合初始物資戰場！");
             }
         }
 
-        // 5. 初始化網頁時載入暫存
         function loadSettingsFromAutoSave() {
             if(localStorage.getItem('autosave_totalRounds')) totalRoundsInput.value = localStorage.getItem('autosave_totalRounds');
             if(localStorage.getItem('autosave_seconds')) secondsInput.value = localStorage.getItem('autosave_seconds');
@@ -547,7 +543,6 @@
                 textarea.id = `txt-paste-${r}`;
                 textarea.placeholder = `【文字複製貼上區】\n請直接在此貼上 Excel 或文字清單\n格式如：眼鏡 * 2`;
                 
-                // 優先讀取自動存檔，若無，則載入預設配置
                 let storedTxt = localStorage.getItem(`autosave_txt_round_${r}`);
                 if (storedTxt !== null) {
                     textarea.value = storedTxt;
@@ -557,7 +552,6 @@
                     textarea.value = "（空）";
                 }
                 
-                // 文字一改變就即時自動存檔
                 textarea.oninput = (function(roundIdx) { 
                     return function() { 
                         autoSaveRoundData(roundIdx); 
@@ -591,7 +585,6 @@
                     let selectQty = document.createElement('select'); selectQty.className = 'select-qty'; selectQty.id = `sel-qty-${r}-${i}`;
                     for(let q = 1; q <= 20; q++) { let o = document.createElement('option'); o.value = q; o.innerText = `${q} 個`; selectQty.appendChild(o); }
 
-                    // 下拉單改變時也自動存檔
                     selectItem.onchange = (function(roundIdx) {
                         return function() { 
                             selectQty.style.visibility = (this.value === "炸彈" || this.value === "（空）") ? "hidden" : "visible";
@@ -663,7 +656,6 @@
                     selItem.onchange();
                 }
             }
-            // 解析後自動存檔
             autoSaveRoundData(roundIndex);
         }
 
@@ -698,11 +690,10 @@
             }
         }
 
-        // 重新部署
         function applySettingsAndReset() {
             document.body.classList.remove('panic-mode');
             maxRounds = parseInt(totalRoundsInput.value) || 7;
-            flipIntervalSeconds = parseInt(secondsInput.value) || 5; // 🛠️ 讀取新的秒數
+            flipIntervalSeconds = parseInt(secondsInput.value) || 5; 
             
             initialTimeLimit = parseInt(timerLimitInput.value) || 120; 
             timeLeft = initialTimeLimit;
