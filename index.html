@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>閃動格子支援前線 - 七回合完美校正版</title>
+    <title>閃動格子支援前線 - 七回合完美校正版 (動態時間版)</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -359,7 +359,8 @@
                 <input type="number" id="secondsInput" value="2" min="1" max="60" onchange="saveConfigToStorage()"> 秒/次
             </div>
             <div class="setup-item">
-                <span>⏳ 回合時限：</span>
+                <span>⏳ 當前回合預設時限：</span>
+                <!-- 改為可調整輸入，但會根據回合數動態更新預設值 -->
                 <input type="number" id="timerLimitInput" value="120" min="5" max="600" onchange="saveConfigToStorage()"> 秒
             </div>
             <button class="btn" onclick="toggleImportArea()">🛠️ 配置戰略物資</button>
@@ -403,7 +404,7 @@
 
         const availableItems = ["眼鏡", "水壺", "左鞋", "手錶", "粉筆", "毛巾盤", "領巾", "右鞋", "襪子", "名牌", "左腳", "右腳", "左手", "右手", "輔導員", "學員", "毛巾", "深蹲", "開合跳", "蛙跳", "伏地挺身", "炸彈", "（空）"];
 
-        // 預設資料 (已完成 1~7 回合校正，確保 1、2、3 回合默認直接載入)
+        // 預設資料 (1~7 回合校正)
         const presetTexts = {
             1: `眼鏡 * 1\n水壺 * 1\n左鞋 * 2\n手錶 * 4\n粉筆 * 3\n毛巾盤 * 2\n領巾 * 2\n右鞋 * 4\n襪子 * 3\n名牌 * 2\n水壺 * 4\n眼鏡 * 2\n左鞋 * 5\n毛巾 * 2\n名牌 * 3\n水壺 * 3`,
             2: `眼鏡 * 2\n水壺 * 2\n左鞋 * 3\n手錶 * 1\n粉筆 * 1\n毛巾盤 * 3\n領巾 * 1\n右鞋 * 3\n襪子 * 4\n名牌 * 3\n左腳 * 1\n右手 * 2\n輔導員 * 1\n學員 * 2\n右腳 * 1\n左手 * 1`,
@@ -422,6 +423,15 @@
         const importArea = document.getElementById('importArea'), mainGameBtn = document.getElementById('mainGameBtn'), pauseGameBtn = document.getElementById('pauseGameBtn');
         const endRoundBtn = document.getElementById('endRoundBtn'); 
         const tabHeaders = document.getElementById('tabHeaders'), tabContents = document.getElementById('tabContents');
+
+        // 🌟 新增：根據回合數自動取得預設時間的函數
+        function getRoundTimeLimit(round) {
+            if (round <= 4) {
+                return 120; // 前面 4 回合：2 分鐘 (120 秒)
+            } else {
+                return 300; // 後面 3 回合 (第 5-7 回合或更後)：5 分鐘 (300 秒)
+            }
+        }
 
         function saveConfigToStorage() {
             localStorage.setItem('game_totalRounds', totalRoundsInput.value);
@@ -449,7 +459,7 @@
         function loadConfigFromStorage() {
             if(localStorage.getItem('game_totalRounds')) totalRoundsInput.value = localStorage.getItem('game_totalRounds');
             if(localStorage.getItem('game_seconds')) secondsInput.value = localStorage.getItem('game_seconds');
-            if(localStorage.getItem('game_timerLimit')) timerLimitInput.value = localStorage.getItem('game_timerLimit');
+            // 回合時限現在會動態綁定回合，故不強制載入單一存檔
         }
 
         function toggleImportArea() { importArea.style.display = (importArea.style.display === 'block') ? 'none' : 'block'; }
@@ -623,9 +633,14 @@
             document.body.classList.remove('panic-mode');
             maxRounds = parseInt(totalRoundsInput.value) || 7;
             flipIntervalSeconds = parseInt(secondsInput.value) || 2;
-            initialTimeLimit = parseInt(timerLimitInput.value) || 120;
+            
+            currentRound = 1; 
+            // 🌟 重新部署時，直接根據第一回合更新時間
+            initialTimeLimit = getRoundTimeLimit(currentRound);
+            timerLimitInput.value = initialTimeLimit;
             timeLeft = initialTimeLimit;
-            currentRound = 1; importArea.style.display = 'none';
+            
+            importArea.style.display = 'none';
             initRoundBoard();
         }
 
@@ -633,12 +648,20 @@
             if (autoFlipTimer) clearInterval(autoFlipTimer);
             if (countdownTimer) clearInterval(countdownTimer);
             document.body.classList.remove('panic-mode');
-            timeLeft = initialTimeLimit; updateTimerDisplay();
+            
+            // 🌟 初始化回合時，動態更新該回合預設時間
+            initialTimeLimit = getRoundTimeLimit(currentRound);
+            timerLimitInput.value = initialTimeLimit;
+            timeLeft = initialTimeLimit; 
+            updateTimerDisplay();
 
             gameState = 'ready'; mainGameBtn.disabled = false; mainGameBtn.className = "btn btn-main btn-start"; mainGameBtn.innerText = "▶ START GAME";
             pauseGameBtn.style.display = "none"; pauseGameBtn.innerText = "⏸️ PAUSE";
             endRoundBtn.style.display = "none"; 
-            statusHint.innerText = `第 ${currentRound} 回合戰略配置就緒！`;
+            
+            // 顯示當前回合時限提示
+            let roundMins = Math.floor(initialTimeLimit / 60);
+            statusHint.innerText = `第 ${currentRound} 回合戰略配置就緒！（本回合時限：${roundMins} 分鐘）`;
             
             board.innerHTML = ''; flippedCount = 0; flippedCountDisplay.innerText = flippedCount;
             currentRoundDisplay.innerText = currentRound; totalRoundsDisplay.innerText = maxRounds;
@@ -789,7 +812,6 @@
         }
 
         window.onload = function() {
-            // 清理舊的 localStorage 避免被暫存覆蓋
             localStorage.clear();
             loadConfigFromStorage();
             generateTabs();
