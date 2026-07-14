@@ -401,10 +401,9 @@
         let autoFlipTimer = null, countdownTimer = null, timeLeft = 120, initialTimeLimit = 120, gameState = 'ready';
         const bombIconUrl = "https://img.icons8.com/emoji/96/bomb-emoji.png";
 
-        // 更新全選項清單，包含表格中出現的專有名詞
         const availableItems = ["眼鏡", "水壺", "左鞋", "手錶", "粉筆", "毛巾盤", "領巾", "右鞋", "襪子", "名牌", "左腳", "右腳", "左手", "右手", "輔導員", "學員", "毛巾", "深蹲", "開合跳", "蛙跳", "伏地挺身", "炸彈", "（空）"];
 
-        // 🎯 表格資料 100% 精準對照移植
+        // 預設資料 (已完成 1~7 回合校正，確保 1、2、3 回合默認直接載入)
         const presetTexts = {
             1: `眼鏡 * 1\n水壺 * 1\n左鞋 * 2\n手錶 * 4\n粉筆 * 3\n毛巾盤 * 2\n領巾 * 2\n右鞋 * 4\n襪子 * 3\n名牌 * 2\n水壺 * 4\n眼鏡 * 2\n左鞋 * 5\n毛巾 * 2\n名牌 * 3\n水壺 * 3`,
             2: `眼鏡 * 2\n水壺 * 2\n左鞋 * 3\n手錶 * 1\n粉筆 * 1\n毛巾盤 * 3\n領巾 * 1\n右鞋 * 3\n襪子 * 4\n名牌 * 3\n左腳 * 1\n右手 * 2\n輔導員 * 1\n學員 * 2\n右腳 * 1\n左手 * 1`,
@@ -729,7 +728,6 @@
             endRoundBtn.style.display = "none";
         }
 
-        // 隨機抽取一張卡牌翻開
         function startAutoFlipTimer() {
             if (autoFlipTimer) clearInterval(autoFlipTimer);
             pickAndExposeRandomCard();
@@ -791,6 +789,8 @@
         }
 
         window.onload = function() {
+            // 清理舊的 localStorage 避免被暫存覆蓋
+            localStorage.clear();
             loadConfigFromStorage();
             generateTabs();
             applySettingsAndReset();
